@@ -120,7 +120,8 @@ int enterTvar(char *id)			//–¼‘O•\‚É•Ï”–¼‚ğ“o˜^
 	enterT(id);
 	nameTable[tIndex].kind = varId;
 	nameTable[tIndex].u.raddr.level = level;
-	nameTable[tIndex].u.raddr.addr = localAddr++;
+	nameTable[tIndex].u.raddr.addr = localAddr;
+	 localAddr++;
 	return tIndex;
 }
 

@@ -150,13 +150,15 @@ void finalSource()
 
 void errorNoCheck()			//エラーの個数のカウント、多すぎたら終わり
 {
-	if (s_iErrorCount++ > MAXERROR)
+	if (s_iErrorCount > MAXERROR)
 	{
+		s_iErrorCount++;
 		fprintf(s_fptex, "too many errors\n</PRE>\n</BODY>\n</HTML>\n");
 		//fprintf(s_fptex, "too many errors\n\\end{document}\n");
 		printf("abort compilation\n");	
 		exit (1);
 	}
+	s_iErrorCount++;
 }
 
 void errorType(char *m)		//型エラーを.html（または.tex）ファイルに出力
@@ -410,8 +412,16 @@ Token checkGet(Token t, KeyId k)			//t.kind == k のチェック
 
 static void printSpaces()			//空白や改行の印字
 {
-	while (s_iCRNum-- > 0){fprintf(s_fptex, "\n");}
-	while (s_iSpaceNum-- > 0){fprintf(s_fptex, " ");}
+	while (s_iCRNum > 0)
+	{
+		s_iCRNum--;
+		fprintf(s_fptex, "\n");
+	}
+	while (s_iSpaceNum > 0)
+	{
+		s_iSpaceNum--;
+		fprintf(s_fptex, " ");
+	}
 	s_iCRNum = 0; 
 	s_iSpaceNum = 0;
 }

@@ -395,7 +395,8 @@ void CompileTheFactor()					//式の因子のコンパイル
 					{
 						for (; ; ) 
 						{
-							CompileTheExpression(); i++;	//実引数のコンパイル
+							CompileTheExpression(); //実引数のコンパイル
+							i++;	
 							if (token.kind==Comma)
 							{	/* 次がコンマなら実引数が続く */
 								token = ProgressAndGetNextToken();
