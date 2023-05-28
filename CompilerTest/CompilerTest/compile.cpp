@@ -13,25 +13,28 @@
 
 static Token token;				//次のトークンを入れておく
 
-static void block(int pIndex);	//ブロックのコンパイル
+static void CompileTheBlock(int pIndex);	//ブロックのコンパイル
 //pIndex はこのブロックの関数名のインデックス
 static void constDecl();			//定数宣言のコンパイル
 static void varDecl();				//変数宣言のコンパイル
 static void funcDecl();			//関数宣言のコンパイル
-static void statement();			//文のコンパイル
-static void expression();			//式のコンパイル
-static void term();				//式の項のコンパイル
-static void factor();				//式の因子のコンパイル
-static void condition();			//条件式のコンパイル
-static int isStBeginKey(Token t);		//トークンtは文の先頭のキーか？
+
+static void CompileTheStatement();			//文のコンパイル
+static void CompileTheExpression();			//式のコンパイル
+static void CompileTheTerm();				//式の項のコンパイル
+static void CompileTheFactor();				//式の因子のコンパイル
+static void CompileTheCondition();			//条件式のコンパイル
+static BOOL IsStartWithBeginKey(Token t);		//トークンtは文の先頭のキーか？
 
 int compile()
 {
 	printf("start compilation\n");
 	initSource();				//getSourceの初期設定
-	token = nextToken();			//最初のトークン
+	token = ProgressAndGetNextToken();			//最初のトークン
 	blockBegin(FIRSTADDR);		//これ以後の宣言は新しいブロックのもの
-	block(0);					//0 はダミー（主ブロックの関数名はない）
+
+	CompileTheBlock(0);					//0 はダミー（主ブロックの関数名はない）
+
 	finalSource();
 	int i = errorN();				//エラーメッセージの個数
 	if (i!=0){printf("%d errors\n", i);}
@@ -39,7 +42,7 @@ int compile()
 	return i<MINERROR;		//エラーメッセージの個数が少ないかどうかの判定
 }
 
-void block(int pIndex)		//pIndex はこのブロックの関数名のインデックス
+void CompileTheBlock(int pIndex)		//pIndex はこのブロックの関数名のインデックス
 {
 	int backP;
 	backP = genCodeV(jmp, 0);		//内部関数を飛び越す命令、後でバックパッチ
@@ -50,19 +53,19 @@ void block(int pIndex)		//pIndex はこのブロックの関数名のインデックス
 		case Const:
 			{
 				//定数宣言部のコンパイル
-				token = nextToken();
+				token = ProgressAndGetNextToken();
 				constDecl(); 
 				continue;
 			}
 		case Var:
 			{//変数宣言部のコンパイル
-				token = nextToken();
+				token = ProgressAndGetNextToken();
 				varDecl(); 
 				continue;
 			}
 		case Func:
 			{//関数宣言部のコンパイル
-				token = nextToken();
+				token = ProgressAndGetNextToken();
 				funcDecl(); 
 				continue;
 			}
@@ -76,7 +79,7 @@ void block(int pIndex)		//pIndex はこのブロックの関数名のインデックス
 	backPatch(backP);			//内部関数を飛び越す命令にパッチ
 	changeV(pIndex, nextCode());	//この関数の開始番地を修正
 	genCodeV(ict, frameL());		//このブロックの実行時の必要記憶域をとる命令
-	statement();				//このブロックの主文		
+	CompileTheStatement();				//このブロックの主文		
 	genCodeR();				//リターン命令
 	blockEnd();				//ブロックが終ったことをtableに連絡
 }	
@@ -90,7 +93,7 @@ void constDecl()			//定数宣言のコンパイル
 		{
 			setIdKind(constId);				//印字のための情報のセット
 			temp = token; 					//名前を入れておく
-			token = checkGet(nextToken(), Equal);		//名前の次は"="のはず
+			token = checkGet(ProgressAndGetNextToken(), Equal);		//名前の次は"="のはず
 			if (token.kind==Num)
 			{
 				enterTconst(temp.u.id, token.u.value);	//定数名と値をテーブルに
@@ -99,7 +102,7 @@ void constDecl()			//定数宣言のコンパイル
 			{
 				errorType("number");
 			}
-			token = nextToken();
+			token = ProgressAndGetNextToken();
 		}
 		else
 		{
@@ -113,7 +116,7 @@ void constDecl()			//定数宣言のコンパイル
 			errorInsert(Comma);
 			continue;
 		}
-		token = nextToken();
+		token = ProgressAndGetNextToken();
 	}
 	token = checkGet(token, Semicolon);		//最後は";"のはず
 }
@@ -126,7 +129,7 @@ void varDecl()				//変数宣言のコンパイル
 		{
 			setIdKind(varId);		//印字のための情報のセット
 			enterTvar(token.u.id);		//変数名をテーブルに、番地はtableが決める
-			token = nextToken();
+			token = ProgressAndGetNextToken();
 		}
 		else
 		{
@@ -141,7 +144,7 @@ void varDecl()				//変数宣言のコンパイル
 			errorInsert(Comma);
 			continue;
 		}
-		token = nextToken();
+		token = ProgressAndGetNextToken();
 	}
 	token = checkGet(token, Semicolon);		//最後は";"のはず
 }
@@ -159,7 +162,7 @@ void funcDecl()			//関数宣言のコンパイル
 	setIdKind(funcId);				//印字のための情報のセット
 	iFuncIndex = enterTfunc(token.u.id, nextCode());		//関数名をテーブルに登録
 	//その先頭番地は、まず、次のコードの番地nextCode()とする
-	token = checkGet(nextToken(), Lparen);
+	token = checkGet(ProgressAndGetNextToken(), Lparen);
 	blockBegin(FIRSTADDR);	//パラメタ名のレベルは関数のブロックと同じ
 	while(1)
 	{
@@ -167,7 +170,7 @@ void funcDecl()			//関数宣言のコンパイル
 		//パラメタ名がある場合
 		setIdKind(parId);		//印字のための情報のセット
 		enterTpar(token.u.id);		//パラメタ名をテーブルに登録
-		token = nextToken();
+		token = ProgressAndGetNextToken();
 
 
 		if (token.kind!=Comma)
@@ -178,24 +181,24 @@ void funcDecl()			//関数宣言のコンパイル
 			errorInsert(Comma);
 			continue;
 		}
-		token = nextToken();
+		token = ProgressAndGetNextToken();
 	}
 	token = checkGet(token, Rparen);		//最後は")"のはず
 	endpar();				//パラメタ部が終わったことをテーブルに連絡
 	if (token.kind==Semicolon)
 	{
 		errorDelete();
-		token = nextToken();
+		token = ProgressAndGetNextToken();
 	}
-	block(iFuncIndex );	//ブロックのコンパイル、その関数名のインデックスを渡す
+	CompileTheBlock(iFuncIndex );	//ブロックのコンパイル、その関数名のインデックスを渡す
 	token = checkGet(token, Semicolon);		//最後は";"のはず
 
 }
 
-void statement()			//文のコンパイル
+void CompileTheStatement()			//文のコンパイル
 {
 	int tIndex;
-	KindT k;
+	KindTable k;
 	int backP, backP2;				//バックパッチ用
 
 	while(1) 
@@ -206,81 +209,81 @@ void statement()			//文のコンパイル
 			{//代入文のコンパイル
 				tIndex = searchT(token.u.id, varId);	//左辺の変数のインデックス
 				setIdKind(k=kindT(tIndex));			//印字のための情報のセット
-				if (k != varId && k != parId) 		//変数名かパラメタ名のはず
-					errorType("var/par");
-				token = checkGet(nextToken(), Assign);			//":="のはず
-				expression();					//式のコンパイル
+				if (k != varId && k != parId){errorType("var/par");} 		//変数名かパラメタ名のはず
+					
+				token = checkGet(ProgressAndGetNextToken(), Assign);			//":="のはず
+				CompileTheExpression();	
 				genCodeT(sto, tIndex);				//左辺への代入命令
 				return;
 			}
 		case If:
 			{//if文のコンパイル
-				token = nextToken();
-				condition();					//条件式のコンパイル
+				token = ProgressAndGetNextToken();
+				CompileTheCondition();					//条件式のコンパイル
 				token = checkGet(token, Then);		//"then"のはず
 				backP = genCodeV(jpc, 0);			//jpc命令
-				statement();					//文のコンパイル
+				CompileTheStatement();					//文のコンパイル
 				backPatch(backP);				//上のjpc命令にバックパッチ
 				return;
 			}
 		case Ret:
 			{//return文のコンパイル
-				token = nextToken();
-				expression();					//式のコンパイル
+				token = ProgressAndGetNextToken();
+				CompileTheExpression();	
 				genCodeR();					//ret命令
 				return;
 			}
 		case Begin:
 			{
 				//begin . . end文のコンパイル
-				token = nextToken();
+				token = ProgressAndGetNextToken();
 				while(1)
 				{
-					statement();				//文のコンパイル
+					CompileTheStatement();				//文のコンパイル
 					while(1)
 					{
 						if (token.kind==Semicolon)
 						{		//次が";"なら文が続く
-							token = nextToken();
+							token = ProgressAndGetNextToken();
 							break;
 						}
 						if (token.kind==End)
 						{			//次がendなら終り
-							token = nextToken();
+							token = ProgressAndGetNextToken();
 							return;
 						}
-						if (isStBeginKey(token))
+						if (IsStartWithBeginKey(token)==TRUE)
 						{		//次が文の先頭記号なら
 							errorInsert(Semicolon);	//";"を忘れたことにする
 							break;
 						}
 						errorDelete();	//それ以外ならエラーとして読み捨てる
-						token = nextToken();
+						token = ProgressAndGetNextToken();
 					}
 				}
 			}
 		case While:
 			{//while文のコンパイル
-				token = nextToken();
+				token = ProgressAndGetNextToken();
 				backP2 = nextCode();			//while文の最後のjmp命令の飛び先
-				condition();				//条件式のコンパイル
+				CompileTheCondition();				//条件式のコンパイル
 				token = checkGet(token, Do);	//"do"のはず
 				backP = genCodeV(jpc, 0);		//条件式が偽のとき飛び出すjpc命令
-				statement();				//文のコンパイル
+				CompileTheStatement();				//文のコンパイル
 				genCodeV(jmp, backP2);		//while文の先頭へのジャンプ命令
 				backPatch(backP);	//偽のとき飛び出すjpc命令へのバックパッチ
 				return;
 			}
 		case Write:
 			{			//write文のコンパイル
-				token = nextToken();
-				expression();				//式のコンパイル
+				token = ProgressAndGetNextToken();
+				CompileTheExpression();
 				genCodeO(wrt);				//その値を出力するwrt命令
 				return;
 			}
 		case WriteLn:
 			{			//writeln文のコンパイル
-				token = nextToken();
+				token = ProgressAndGetNextToken();
 				genCodeO(wrl);				//改行を出力するwrl命令
 				return;
 			}
@@ -290,35 +293,35 @@ void statement()			//文のコンパイル
 		default:
 			{//文の先頭のキーまで読み捨てる
 				errorDelete();				//今読んだトークンを読み捨てる
-				token = nextToken();
+				token = ProgressAndGetNextToken();
 				continue;
 			}
 		}		
 	}
 }
 
-int isStBeginKey(Token t)			//トークンtは文の先頭のキーか？
+BOOL IsStartWithBeginKey(Token t)			//トークンtは文の先頭のキーか？
 {
 	switch (t.kind)
 	{
-	case If: {return 1;}
-	case Begin: {return 1;}
-	case Ret:{return 1;}
-	case While:{return 1;}
-	case Write: {return 1;}
-	case WriteLn:{return 1;}
-	default:{return 0;}
+	case If: {return TRUE;}
+	case Begin: {return TRUE;}
+	case Ret:{return TRUE;}
+	case While:{return TRUE;}
+	case Write: {return TRUE;}
+	case WriteLn:{return TRUE;}
+	default:{return FALSE;}
 	}
 }
 
-void expression()				//式のコンパイル
+void CompileTheExpression()
 {
 	KeyId k;
 	k = token.kind;
 	if (k==Plus || k==Minus)
 	{
-		token = nextToken();
-		term();
+		token = ProgressAndGetNextToken();
+		CompileTheTerm();
 		if (k==Minus)
 		{
 			genCodeO(neg);
@@ -326,36 +329,36 @@ void expression()				//式のコンパイル
 	}
 	else
 	{
-		term();
+		CompileTheTerm();
 	}
 
 	k = token.kind;
 	while (k==Plus || k==Minus)
 	{
-		token = nextToken();
-		term();
+		token = ProgressAndGetNextToken();
+		CompileTheTerm();
 		if (k==Minus){genCodeO(sub);}
 		else{genCodeO(add);}
 		k = token.kind;
 	}
 }
 
-void term()					//式の項のコンパイル
+void CompileTheTerm()					//式の項のコンパイル
 {
 	KeyId k;
-	factor();
+	CompileTheFactor();
 	k = token.kind;
 	while (k==Mult || k==Div)
 	{	
-		token = nextToken();
-		factor();
+		token = ProgressAndGetNextToken();
+		CompileTheFactor();
 		if (k==Mult){genCodeO(mul);}
 		else{genCodeO(div_);}
 		k = token.kind;
 	}
 }
 
-void factor()					//式の因子のコンパイル
+void CompileTheFactor()					//式の因子のコンパイル
 {
 	int tIndex, i;
 	KeyId k;
@@ -369,40 +372,40 @@ void factor()					//式の因子のコンパイル
 		case varId:
 			{//変数名かパラメタ名
 				genCodeT(lod, tIndex);
-				token = nextToken(); break;
+				token = ProgressAndGetNextToken(); break;
 			}
 		case parId:	
 			{//変数名かパラメタ名
 				genCodeT(lod, tIndex);
-				token = nextToken(); break;
+				token = ProgressAndGetNextToken(); break;
 			}
 		case constId:		
 			{			//定数名
 				genCodeV(lit, val(tIndex));
-				token = nextToken(); break;
+				token = ProgressAndGetNextToken(); break;
 			}
 		case funcId:
 			{//関数呼び出し
-				token = nextToken();
+				token = ProgressAndGetNextToken();
 				if (token.kind==Lparen)
 				{
 					i=0; 					//iは実引数の個数
-					token = nextToken();
+					token = ProgressAndGetNextToken();
 					if (token.kind != Rparen) 
 					{
 						for (; ; ) 
 						{
-							expression(); i++;	//実引数のコンパイル
+							CompileTheExpression(); i++;	//実引数のコンパイル
 							if (token.kind==Comma)
 							{	/* 次がコンマなら実引数が続く */
-								token = nextToken();
+								token = ProgressAndGetNextToken();
 								continue;
 							}
 							token = checkGet(token, Rparen);
 							break;
 						}
 					} 
-					else{token = nextToken();}
+					else{token = ProgressAndGetNextToken();}
 					if (pars(tIndex) != i) {errorMessage("\\#par");}	//pars(tIndex)は仮引数の個数
 				}
 				else
@@ -418,12 +421,12 @@ void factor()					//式の因子のコンパイル
 	else if (token.kind==Num)
 	{			//定数
 		genCodeV(lit, token.u.value);
-		token = nextToken();
+		token = ProgressAndGetNextToken();
 	}
 	else if (token.kind==Lparen)
 	{			//「(」「因子」「)」
-		token = nextToken();
-		expression();
+		token = ProgressAndGetNextToken();
+		CompileTheExpression();
 		token = checkGet(token, Rparen);
 	}
 
@@ -432,19 +435,19 @@ void factor()					//式の因子のコンパイル
 	case Id: 
 		{
 			errorMissingOp();
-			factor();
+			CompileTheFactor();
 			return;
 		}
 	case Num: 
 		{
 			errorMissingOp();
-			factor();
+			CompileTheFactor();
 			return;
 		}
 	case Lparen:
 		{
 			errorMissingOp();
-			factor();
+			CompileTheFactor();
 			return;
 		}
 	default:
@@ -454,18 +457,18 @@ void factor()					//式の因子のコンパイル
 	}	
 }
 
-void condition()					//条件式のコンパイル
+void CompileTheCondition()					//条件式のコンパイル
 {
 	KeyId k;
 	if (token.kind==Odd)
 	{
-		token = nextToken();
-		expression();
+		token = ProgressAndGetNextToken();
+		CompileTheExpression();
 		genCodeO(odd);
 		return;
 	}
 
-	expression();
+	CompileTheExpression();
 	k = token.kind;
 	switch(k)
 	{
@@ -483,8 +486,8 @@ void condition()					//条件式のコンパイル
 		}
 	}
 
-	token = nextToken();
-	expression();
+	token = ProgressAndGetNextToken();
+	CompileTheExpression();
 	switch(k)
 	{
 	case Equal:	{genCodeO(eq); break;}

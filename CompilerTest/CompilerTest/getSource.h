@@ -38,7 +38,7 @@ typedef  struct  token {			/*　トークンの型　*/
 	} u;
 }Token;
 
-Token nextToken();				/*　次のトークンを読んで返す　*/
+Token ProgressAndGetNextToken();				/*　次のトークンを読んで返す　*/
 Token checkGet(Token t, KeyId k);	/*　t.kind==kのチェック　*/
 	/*　t.kind==kなら、次のトークンを読んで返す　*/
 	/*　t.kind!=kならエラーメッセージを出し、tとkが共に記号、または予約語なら　*/
@@ -58,5 +58,5 @@ void errorMessage(char *m);	/*　エラーメッセージを.texファイルに出力　*/
 void errorF(char *m);			/*　エラーメッセージを出力し、コンパイル終了　*/
 int errorN();				/*　エラーの個数を返す　*/
 
-void setIdKind(KindT k);     /*　現トークン(Id)の種類をセット（.texファイル出力のため）*/
+void setIdKind(KindTable k);     /*　現トークン(Id)の種類をセット（.texファイル出力のため）*/
 
