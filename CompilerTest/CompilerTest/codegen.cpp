@@ -25,69 +25,69 @@ typedef struct inst
 	}u;
 }Inst;
 
-static Inst code[MAXCODE];		//目的コードが入る
-static int cIndex = -1;				//最後に生成した命令語のインデックス
+static Inst s_instCode[MAXCODE];		//目的コードが入る
+static int s_iCodeIndex = -1;				//最後に生成した命令語のインデックス
 static void checkMax();	     		 //目的コードのインデックスの増加とチェック
 static void printCode(int i);		//命令語の印字
 
 int nextCode()					//次の命令語のアドレスを返す
 {
-	return cIndex+1;
+	return s_iCodeIndex +1;
 }
 
 int genCodeV(OpCode op, int v)		//命令語の生成、アドレス部にv
 {
 	checkMax();
-	code[cIndex].opCode = op;
-	code[cIndex].u.value = v;
-	return cIndex;
+	s_instCode[s_iCodeIndex].opCode = op;
+	s_instCode[s_iCodeIndex].u.value = v;
+	return s_iCodeIndex;
 }
 
 int genCodeT(OpCode op, int ti)		//命令語の生成、アドレスは名前表から
 {
 	checkMax();
-	code[cIndex].opCode = op;
-	code[cIndex].u.addr = relAddr(ti);
-	return cIndex;
+	s_instCode[s_iCodeIndex].opCode = op;
+	s_instCode[s_iCodeIndex].u.addr = relAddr(ti);
+	return s_iCodeIndex;
 }
 
 int genCodeO(Operator p)			//命令語の生成、アドレス部に演算命令
 {
 	checkMax();
-	code[cIndex].opCode = opr;
-	code[cIndex].u.optr = p;
-	return cIndex;
+	s_instCode[s_iCodeIndex].opCode = opr;
+	s_instCode[s_iCodeIndex].u.optr = p;
+	return s_iCodeIndex;
 }
 
 int genCodeR()					//ret命令語の生成
 {
-	if (code[cIndex].opCode == ret){return cIndex;}			//直前がretなら生成せず
+	if (s_instCode[s_iCodeIndex].opCode == ret){return s_iCodeIndex;}			//直前がretなら生成せず
 
 	checkMax();
-	code[cIndex].opCode = ret;
-	code[cIndex].u.addr.level = bLevel();
-	code[cIndex].u.addr.addr = fPars();	//パラメタ数（実行スタックの解放用）*/
-	return cIndex;
+	s_instCode[s_iCodeIndex].opCode = ret;
+	s_instCode[s_iCodeIndex].u.addr.level = bLevel();
+	s_instCode[s_iCodeIndex].u.addr.addr = fPars();	//パラメタ数（実行スタックの解放用）*/
+	return s_iCodeIndex;
 }
 
 void checkMax()		//目的コードのインデックスの増加とチェック
 {
-	cIndex++;
-	if (cIndex < MAXCODE){return;}
+	s_iCodeIndex++;
+	if (s_iCodeIndex < MAXCODE){return;}
 
 	errorF("too many code");
 }
 	
 void backPatch(int i)		//命令語のバックパッチ（次の番地を）
 {
-	code[i].u.value = cIndex+1;
+	s_instCode[i].u.value = s_iCodeIndex+1;
 }
 
 void listCode()			//命令語のリスティング
 {
 	int i;
 	printf("\ncode\n");
-	for(i=0; i<=cIndex; i++)
+	for(i=0; i<=s_iCodeIndex; i++)
 	{
 		printf("%3d: ", i);
 		printCode(i);
@@ -97,7 +97,7 @@ void listCode()			//命令語のリスティング
 void printCode(int i)		//命令語の印字
 {
 	int flag;
-	switch(code[i].opCode)
+	switch(s_instCode[i].opCode)
 	{
 	case lit: {printf("lit"); flag=1; break;}
 	case opr: {printf("opr"); flag=3; break;}
@@ -114,18 +114,18 @@ void printCode(int i)		//命令語の印字
 	{
 	case 1:
 		{
-			printf(",%d\n", code[i].u.value);
+			printf(",%d\n", s_instCode[i].u.value);
 			return;
 		}
 	case 2:
 		{
-			printf(",%d", code[i].u.addr.level);
-			printf(",%d\n", code[i].u.addr.addr);
+			printf(",%d", s_instCode[i].u.addr.level);
+			printf(",%d\n", s_instCode[i].u.addr.addr);
 			return;
 		}
 	case 3:
 		{
-			switch(code[i].u.optr)
+			switch(s_instCode[i].u.optr)
 			{
 			case neg: printf(",neg\n"); {return;}
 			case add: printf(",add\n"); {return;}
@@ -159,7 +159,7 @@ void execute()			//目的コード（命令語）の実行
 	display[0] = 0;			//主ブロックの先頭番地は 0
 	do 
 	{
-		i = code[pc];			//これから実行する命令語
+		i = s_instCode[pc];			//これから実行する命令語
 		pc++;
 		switch(i.opCode)
 		{

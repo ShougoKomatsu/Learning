@@ -30,10 +30,10 @@ typedef struct tableE
 static TabelE s_tableName[MAXTABLE];		//名前表
 static int s_iNameIndex = 0;			//名前表のインデックス
 static int s_iBlockLevel = -1;			//現在のブロックレベル
-static int index[MAXLEVEL];   	//index[i]にはブロックレベルiの最後のインデックス
-static int addr[MAXLEVEL];    	//addr[i]にはブロックレベルiの最後の変数の番地
-static int localAddr;			//現在のブロックの最後の変数の番地
-static int tfIndex;
+static int s_iBlockindex[MAXLEVEL];   	//index[i]にはブロックレベルiの最後のインデックス
+static int s_iValAddress[MAXLEVEL];    	//addr[i]にはブロックレベルiの最後の変数の番地
+static int s_iLocalValAddress;			//現在のブロックの最後の変数の番地
+static int s_tfIndex;
 
 static char* kindName(KindTable k)		//名前の種類の出力用関数
 {
@@ -50,7 +50,7 @@ void blockBegin(int firstAddr)	//ブロックの始まり(最初の変数の番地)で呼ばれる
 {
 	if (s_iBlockLevel == -1)
 	{			//主ブロックの時、初期設定
-		localAddr = firstAddr;
+		s_iLocalValAddress = firstAddr;
 		s_iNameIndex = 0;
 		s_iBlockLevel++;
 		return;
@@ -59,9 +59,9 @@ void blockBegin(int firstAddr)	//ブロックの始まり(最初の変数の番地)で呼ばれる
 	{
 		errorF("too many nested blocks");
 	}
-	index[s_iBlockLevel] = s_iNameIndex;		//今までのブロックの情報を格納
-	addr[s_iBlockLevel] = localAddr;
-	localAddr = firstAddr;		//新しいブロックの最初の変数の番地
+	s_iBlockindex[s_iBlockLevel] = s_iNameIndex;		//今までのブロックの情報を格納
+	s_iValAddress[s_iBlockLevel] = s_iLocalValAddress;
+	s_iLocalValAddress = firstAddr;		//新しいブロックの最初の変数の番地
 	s_iBlockLevel++;				//新しいブロックのレベル
 	return;
 }
@@ -69,8 +69,8 @@ void blockBegin(int firstAddr)	//ブロックの始まり(最初の変数の番地)で呼ばれる
 void blockEnd()				//ブロックの終りで呼ばれる
 {
 	s_iBlockLevel--;
-	s_iNameIndex = index[s_iBlockLevel];		//一つ外側のブロックの情報を回復
-	localAddr = addr[s_iBlockLevel];
+	s_iNameIndex = s_iBlockindex[s_iBlockLevel];		//一つ外側のブロックの情報を回復
+	s_iLocalValAddress = s_iValAddress[s_iBlockLevel];
 }
 
 int bLevel()				//現ブロックのレベルを返す
@@ -80,7 +80,7 @@ int bLevel()				//現ブロックのレベルを返す
 
 int fPars()					//現ブロックの関数のパラメタ数を返す
 {
-	return s_tableName[index[s_iBlockLevel-1]].u.f.pars;
+	return s_tableName[s_iBlockindex[s_iBlockLevel-1]].u.f.pars;
 }
 
 void enterT(char *id)			//名前表に名前を登録
@@ -104,7 +104,7 @@ int enterTfunc(char *id, int v)		//名前表に関数名と先頭番地を登録
 	s_tableName[s_iNameIndex].u.f.raddr.level = s_iBlockLevel;
 	s_tableName[s_iNameIndex].u.f.raddr.addr = v;  		 //関数の先頭番地
 	s_tableName[s_iNameIndex].u.f.pars = 0;  			 //パラメタ数の初期値
-	tfIndex = s_iNameIndex;
+	s_tfIndex = s_iNameIndex;
 	return s_iNameIndex;
 }
 
@@ -113,7 +113,7 @@ int enterTpar(char *id)				//名前表にパラメタ名を登録
 	enterT(id);
 	s_tableName[s_iNameIndex].kind = parId;
 	s_tableName[s_iNameIndex].u.raddr.level = s_iBlockLevel;
-	s_tableName[tfIndex].u.f.pars++;  		 //関数のパラメタ数のカウント
+	s_tableName[s_tfIndex].u.f.pars++;  		 //関数のパラメタ数のカウント
 	return s_iNameIndex;
 }
 
@@ -122,8 +122,8 @@ int enterTvar(char *id)			//名前表に変数名を登録
 	enterT(id);
 	s_tableName[s_iNameIndex].kind = varId;
 	s_tableName[s_iNameIndex].u.raddr.level = s_iBlockLevel;
-	s_tableName[s_iNameIndex].u.raddr.addr = localAddr;
-	 localAddr++;
+	s_tableName[s_iNameIndex].u.raddr.addr = s_iLocalValAddress;
+	 s_iLocalValAddress++;
 	return s_iNameIndex;
 }
 
@@ -138,11 +138,11 @@ int enterTconst(char *id, int v)		//名前表に定数名とその値を登録
 void endpar()					//パラメタ宣言部の最後で呼ばれる
 {
 	int i;
-	int pars = s_tableName[tfIndex].u.f.pars;
+	int pars = s_tableName[s_tfIndex].u.f.pars;
 	if (pars == 0)  {return;}
 	for (i=1; i<=pars; i++)	
 	{		//各パラメタの番地を求める
-		s_tableName[tfIndex+i].u.raddr.addr = i-1-pars;
+		s_tableName[s_tfIndex+i].u.raddr.addr = i-1-pars;
 	}
 }
 
@@ -189,6 +189,6 @@ int pars(int ti)				//名前表[ti]の関数のパラメタ数を返す
 
 int frameL()				//そのブロックで実行時に必要とするメモリー容量
 {
-	return localAddr;
+	return s_iLocalValAddress;
 }
 

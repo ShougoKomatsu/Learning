@@ -11,7 +11,7 @@
 #define MINERROR 3			//エラーがこれ以下なら実行
 #define FIRSTADDR 2			//各ブロックの最初の変数のアドレス
 
-static Token token;				//次のトークンを入れておく
+static Token s_Token;				//次のトークンを入れておく
 
 static void CompileTheBlock(int pIndex);	//ブロックのコンパイル
 //pIndex はこのブロックの関数名のインデックス
@@ -30,7 +30,7 @@ int compile()
 {
 	printf("start compilation\n");
 	initSource();				//getSourceの初期設定
-	token = ProgressAndGetNextToken();			//最初のトークン
+	s_Token = ProgressAndGetNextToken();			//最初のトークン
 	blockBegin(FIRSTADDR);		//これ以後の宣言は新しいブロックのもの
 
 	CompileTheBlock(0);					//0 はダミー（主ブロックの関数名はない）
@@ -48,24 +48,24 @@ void CompileTheBlock(int pIndex)		//pIndex はこのブロックの関数名のインデックス
 	backP = genCodeV(jmp, 0);		//内部関数を飛び越す命令、後でバックパッチ
 	while (1) 
 	{				//宣言部のコンパイルを繰り返す
-		switch (token.kind)
+		switch (s_Token.kind)
 		{
 		case Const:
 			{
 				//定数宣言部のコンパイル
-				token = ProgressAndGetNextToken();
+				s_Token = ProgressAndGetNextToken();
 				constDecl(); 
 				continue;
 			}
 		case Var:
 			{//変数宣言部のコンパイル
-				token = ProgressAndGetNextToken();
+				s_Token = ProgressAndGetNextToken();
 				varDecl(); 
 				continue;
 			}
 		case Func:
 			{//関数宣言部のコンパイル
-				token = ProgressAndGetNextToken();
+				s_Token = ProgressAndGetNextToken();
 				funcDecl(); 
 				continue;
 			}
@@ -89,70 +89,70 @@ void constDecl()			//定数宣言のコンパイル
 	Token temp;
 	while(1)
 	{
-		if (token.kind==Id)
+		if (s_Token.kind==Id)
 		{
 			setIdKind(constId);				//印字のための情報のセット
-			temp = token; 					//名前を入れておく
-			token = checkGet(ProgressAndGetNextToken(), Equal);		//名前の次は"="のはず
-			if (token.kind==Num)
+			temp = s_Token; 					//名前を入れておく
+			s_Token = checkGet(ProgressAndGetNextToken(), Equal);		//名前の次は"="のはず
+			if (s_Token.kind==Num)
 			{
-				enterTconst(temp.u.id, token.u.value);	//定数名と値をテーブルに
+				enterTconst(temp.u.id, s_Token.u.value);	//定数名と値をテーブルに
 			}
 			else
 			{
 				errorType("number");
 			}
-			token = ProgressAndGetNextToken();
+			s_Token = ProgressAndGetNextToken();
 		}
 		else
 		{
 			errorMissingId();
 		}
 
-		if (token.kind!=Comma)
+		if (s_Token.kind!=Comma)
 		{		//次がコンマなら定数宣言が続く
-			if (token.kind!=Id){break;}
+			if (s_Token.kind!=Id){break;}
 			//次が名前ならコンマを忘れたことにする
 			errorInsert(Comma);
 			continue;
 		}
-		token = ProgressAndGetNextToken();
+		s_Token = ProgressAndGetNextToken();
 	}
-	token = checkGet(token, Semicolon);		//最後は";"のはず
+	s_Token = checkGet(s_Token, Semicolon);		//最後は";"のはず
 }
 
 void varDecl()				//変数宣言のコンパイル
 {
 	while(1)
 	{
-		if (token.kind==Id)
+		if (s_Token.kind==Id)
 		{
 			setIdKind(varId);		//印字のための情報のセット
-			enterTvar(token.u.id);		//変数名をテーブルに、番地はtableが決める
-			token = ProgressAndGetNextToken();
+			enterTvar(s_Token.u.id);		//変数名をテーブルに、番地はtableが決める
+			s_Token = ProgressAndGetNextToken();
 		}
 		else
 		{
 			errorMissingId();
 		}
 
-		if (token.kind!=Comma)
+		if (s_Token.kind!=Comma)
 		{		//次がコンマなら変数宣言が続く
-			if (token.kind!=Id){break;}
+			if (s_Token.kind!=Id){break;}
 
 			//次が名前ならコンマを忘れたことにする
 			errorInsert(Comma);
 			continue;
 		}
-		token = ProgressAndGetNextToken();
+		s_Token = ProgressAndGetNextToken();
 	}
-	token = checkGet(token, Semicolon);		//最後は";"のはず
+	s_Token = checkGet(s_Token, Semicolon);		//最後は";"のはず
 }
 
 void funcDecl()			//関数宣言のコンパイル
 {
 	int iFuncIndex ;
-	if (token.kind!=Id)
+	if (s_Token.kind!=Id)
 	{
 		errorMissingId();			//関数名がない
 		return;
@@ -160,38 +160,38 @@ void funcDecl()			//関数宣言のコンパイル
 
 
 	setIdKind(funcId);				//印字のための情報のセット
-	iFuncIndex = enterTfunc(token.u.id, nextCode());		//関数名をテーブルに登録
+	iFuncIndex = enterTfunc(s_Token.u.id, nextCode());		//関数名をテーブルに登録
 	//その先頭番地は、まず、次のコードの番地nextCode()とする
-	token = checkGet(ProgressAndGetNextToken(), Lparen);
+	s_Token = checkGet(ProgressAndGetNextToken(), Lparen);
 	blockBegin(FIRSTADDR);	//パラメタ名のレベルは関数のブロックと同じ
 	while(1)
 	{
-		if (token.kind!=Id){break;}
+		if (s_Token.kind!=Id){break;}
 		//パラメタ名がある場合
 		setIdKind(parId);		//印字のための情報のセット
-		enterTpar(token.u.id);		//パラメタ名をテーブルに登録
-		token = ProgressAndGetNextToken();
+		enterTpar(s_Token.u.id);		//パラメタ名をテーブルに登録
+		s_Token = ProgressAndGetNextToken();
 
 
-		if (token.kind!=Comma)
+		if (s_Token.kind!=Comma)
 		{		//次がコンマならパラメタ名が続く
-			if (token.kind!=Id){break;}
+			if (s_Token.kind!=Id){break;}
 
 			//次が名前ならコンマを忘れたことに
 			errorInsert(Comma);
 			continue;
 		}
-		token = ProgressAndGetNextToken();
+		s_Token = ProgressAndGetNextToken();
 	}
-	token = checkGet(token, Rparen);		//最後は")"のはず
+	s_Token = checkGet(s_Token, Rparen);		//最後は")"のはず
 	endpar();				//パラメタ部が終わったことをテーブルに連絡
-	if (token.kind==Semicolon)
+	if (s_Token.kind==Semicolon)
 	{
 		errorDelete();
-		token = ProgressAndGetNextToken();
+		s_Token = ProgressAndGetNextToken();
 	}
 	CompileTheBlock(iFuncIndex );	//ブロックのコンパイル、その関数名のインデックスを渡す
-	token = checkGet(token, Semicolon);		//最後は";"のはず
+	s_Token = checkGet(s_Token, Semicolon);		//最後は";"のはず
 
 }
 
@@ -203,24 +203,24 @@ void CompileTheStatement()			//文のコンパイル
 
 	while(1) 
 	{
-		switch (token.kind) 
+		switch (s_Token.kind) 
 		{
 		case Id:
 			{//代入文のコンパイル
-				tIndex = searchT(token.u.id, varId);	//左辺の変数のインデックス
+				tIndex = searchT(s_Token.u.id, varId);	//左辺の変数のインデックス
 				setIdKind(k=kindT(tIndex));			//印字のための情報のセット
 				if (k != varId && k != parId){errorType("var/par");} 		//変数名かパラメタ名のはず
 					
-				token = checkGet(ProgressAndGetNextToken(), Assign);			//":="のはず
+				s_Token = checkGet(ProgressAndGetNextToken(), Assign);			//":="のはず
 				CompileTheExpression();	
 				genCodeT(sto, tIndex);				//左辺への代入命令
 				return;
 			}
 		case If:
 			{//if文のコンパイル
-				token = ProgressAndGetNextToken();
+				s_Token = ProgressAndGetNextToken();
 				CompileTheCondition();					//条件式のコンパイル
-				token = checkGet(token, Then);		//"then"のはず
+				s_Token = checkGet(s_Token, Then);		//"then"のはず
 				backP = genCodeV(jpc, 0);			//jpc命令
 				CompileTheStatement();					//文のコンパイル
 				backPatch(backP);				//上のjpc命令にバックパッチ
@@ -228,7 +228,7 @@ void CompileTheStatement()			//文のコンパイル
 			}
 		case Ret:
 			{//return文のコンパイル
-				token = ProgressAndGetNextToken();
+				s_Token = ProgressAndGetNextToken();
 				CompileTheExpression();	
 				genCodeR();					//ret命令
 				return;
@@ -236,38 +236,38 @@ void CompileTheStatement()			//文のコンパイル
 		case Begin:
 			{
 				//begin . . end文のコンパイル
-				token = ProgressAndGetNextToken();
+				s_Token = ProgressAndGetNextToken();
 				while(1)
 				{
 					CompileTheStatement();				//文のコンパイル
 					while(1)
 					{
-						if (token.kind==Semicolon)
+						if (s_Token.kind==Semicolon)
 						{		//次が";"なら文が続く
-							token = ProgressAndGetNextToken();
+							s_Token = ProgressAndGetNextToken();
 							break;
 						}
-						if (token.kind==End)
+						if (s_Token.kind==End)
 						{			//次がendなら終り
-							token = ProgressAndGetNextToken();
+							s_Token = ProgressAndGetNextToken();
 							return;
 						}
-						if (IsStartWithBeginKey(token)==TRUE)
+						if (IsStartWithBeginKey(s_Token)==TRUE)
 						{		//次が文の先頭記号なら
 							errorInsert(Semicolon);	//";"を忘れたことにする
 							break;
 						}
 						errorDelete();	//それ以外ならエラーとして読み捨てる
-						token = ProgressAndGetNextToken();
+						s_Token = ProgressAndGetNextToken();
 					}
 				}
 			}
 		case While:
 			{//while文のコンパイル
-				token = ProgressAndGetNextToken();
+				s_Token = ProgressAndGetNextToken();
 				backP2 = nextCode();			//while文の最後のjmp命令の飛び先
 				CompileTheCondition();				//条件式のコンパイル
-				token = checkGet(token, Do);	//"do"のはず
+				s_Token = checkGet(s_Token, Do);	//"do"のはず
 				backP = genCodeV(jpc, 0);		//条件式が偽のとき飛び出すjpc命令
 				CompileTheStatement();				//文のコンパイル
 				genCodeV(jmp, backP2);		//while文の先頭へのジャンプ命令
@@ -276,14 +276,14 @@ void CompileTheStatement()			//文のコンパイル
 			}
 		case Write:
 			{			//write文のコンパイル
-				token = ProgressAndGetNextToken();
+				s_Token = ProgressAndGetNextToken();
 				CompileTheExpression();
 				genCodeO(wrt);				//その値を出力するwrt命令
 				return;
 			}
 		case WriteLn:
 			{			//writeln文のコンパイル
-				token = ProgressAndGetNextToken();
+				s_Token = ProgressAndGetNextToken();
 				genCodeO(wrl);				//改行を出力するwrl命令
 				return;
 			}
@@ -293,7 +293,7 @@ void CompileTheStatement()			//文のコンパイル
 		default:
 			{//文の先頭のキーまで読み捨てる
 				errorDelete();				//今読んだトークンを読み捨てる
-				token = ProgressAndGetNextToken();
+				s_Token = ProgressAndGetNextToken();
 				continue;
 			}
 		}		
@@ -317,10 +317,10 @@ BOOL IsStartWithBeginKey(Token t)			//トークンtは文の先頭のキーか？
 void CompileTheExpression()
 {
 	KeyId k;
-	k = token.kind;
+	k = s_Token.kind;
 	if (k==Plus || k==Minus)
 	{
-		token = ProgressAndGetNextToken();
+		s_Token = ProgressAndGetNextToken();
 		CompileTheTerm();
 		if (k==Minus)
 		{
@@ -332,14 +332,14 @@ void CompileTheExpression()
 		CompileTheTerm();
 	}
 
-	k = token.kind;
+	k = s_Token.kind;
 	while (k==Plus || k==Minus)
 	{
-		token = ProgressAndGetNextToken();
+		s_Token = ProgressAndGetNextToken();
 		CompileTheTerm();
 		if (k==Minus){genCodeO(sub);}
 		else{genCodeO(add);}
-		k = token.kind;
+		k = s_Token.kind;
 	}
 }
 
@@ -347,14 +347,14 @@ void CompileTheTerm()					//式の項のコンパイル
 {
 	KeyId k;
 	CompileTheFactor();
-	k = token.kind;
+	k = s_Token.kind;
 	while (k==Mult || k==Div)
 	{	
-		token = ProgressAndGetNextToken();
+		s_Token = ProgressAndGetNextToken();
 		CompileTheFactor();
 		if (k==Mult){genCodeO(mul);}
 		else{genCodeO(div_);}
-		k = token.kind;
+		k = s_Token.kind;
 	}
 }
 
@@ -362,9 +362,9 @@ void CompileTheFactor()					//式の因子のコンパイル
 {
 	int tIndex, i;
 	KeyId k;
-	if (token.kind==Id)
+	if (s_Token.kind==Id)
 	{
-		tIndex = searchT(token.u.id, varId);
+		tIndex = searchT(s_Token.u.id, varId);
 		k=static_cast<KeyId>(kindT(tIndex));
 		setIdKind(kindT(tIndex));			//印字のための情報のセット
 		switch (k) 
@@ -372,41 +372,41 @@ void CompileTheFactor()					//式の因子のコンパイル
 		case varId:
 			{//変数名かパラメタ名
 				genCodeT(lod, tIndex);
-				token = ProgressAndGetNextToken(); break;
+				s_Token = ProgressAndGetNextToken(); break;
 			}
 		case parId:	
 			{//変数名かパラメタ名
 				genCodeT(lod, tIndex);
-				token = ProgressAndGetNextToken(); break;
+				s_Token = ProgressAndGetNextToken(); break;
 			}
 		case constId:		
 			{			//定数名
 				genCodeV(lit, val(tIndex));
-				token = ProgressAndGetNextToken(); break;
+				s_Token = ProgressAndGetNextToken(); break;
 			}
 		case funcId:
 			{//関数呼び出し
-				token = ProgressAndGetNextToken();
-				if (token.kind==Lparen)
+				s_Token = ProgressAndGetNextToken();
+				if (s_Token.kind==Lparen)
 				{
 					i=0; 					//iは実引数の個数
-					token = ProgressAndGetNextToken();
-					if (token.kind != Rparen) 
+					s_Token = ProgressAndGetNextToken();
+					if (s_Token.kind != Rparen) 
 					{
 						for (; ; ) 
 						{
 							CompileTheExpression(); //実引数のコンパイル
 							i++;	
-							if (token.kind==Comma)
+							if (s_Token.kind==Comma)
 							{	/* 次がコンマなら実引数が続く */
-								token = ProgressAndGetNextToken();
+								s_Token = ProgressAndGetNextToken();
 								continue;
 							}
-							token = checkGet(token, Rparen);
+							s_Token = checkGet(s_Token, Rparen);
 							break;
 						}
 					} 
-					else{token = ProgressAndGetNextToken();}
+					else{s_Token = ProgressAndGetNextToken();}
 					if (pars(tIndex) != i) {errorMessage("\\#par");}	//pars(tIndex)は仮引数の個数
 				}
 				else
@@ -419,19 +419,19 @@ void CompileTheFactor()					//式の因子のコンパイル
 			}
 		}
 	}
-	else if (token.kind==Num)
+	else if (s_Token.kind==Num)
 	{			//定数
-		genCodeV(lit, token.u.value);
-		token = ProgressAndGetNextToken();
+		genCodeV(lit, s_Token.u.value);
+		s_Token = ProgressAndGetNextToken();
 	}
-	else if (token.kind==Lparen)
+	else if (s_Token.kind==Lparen)
 	{			//「(」「因子」「)」
-		token = ProgressAndGetNextToken();
+		s_Token = ProgressAndGetNextToken();
 		CompileTheExpression();
-		token = checkGet(token, Rparen);
+		s_Token = checkGet(s_Token, Rparen);
 	}
 
-	switch (token.kind)
+	switch (s_Token.kind)
 	{					//因子の後がまた因子ならエラー
 	case Id: 
 		{
@@ -461,16 +461,16 @@ void CompileTheFactor()					//式の因子のコンパイル
 void CompileTheCondition()					//条件式のコンパイル
 {
 	KeyId k;
-	if (token.kind==Odd)
+	if (s_Token.kind==Odd)
 	{
-		token = ProgressAndGetNextToken();
+		s_Token = ProgressAndGetNextToken();
 		CompileTheExpression();
 		genCodeO(odd);
 		return;
 	}
 
 	CompileTheExpression();
-	k = token.kind;
+	k = s_Token.kind;
 	switch(k)
 	{
 	case Equal: {break;}
@@ -487,7 +487,7 @@ void CompileTheCondition()					//条件式のコンパイル
 		}
 	}
 
-	token = ProgressAndGetNextToken();
+	s_Token = ProgressAndGetNextToken();
 	CompileTheExpression();
 	switch(k)
 	{

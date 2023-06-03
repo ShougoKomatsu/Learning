@@ -1,5 +1,4 @@
 #include "stdafx.h"
-    /********* main.c *********/
 
 #include <stdio.h>
 #include "getSource.h"
@@ -10,10 +9,10 @@ void testmain()
 	char fileName[30];		/*　ソースプログラムファイルの名前　*/
 	printf("enter source file name\n");
 	scanf("%s", fileName);
-	if (!openSource(fileName))	/*　ソースプログラムファイルのopen　*/
-		return;			/*　openに失敗すれば終わり　*/
-	if (compile())			/*　コンパイルして　*/
-		execute();			/*　エラーがなければ実行　*/
+	if (!openSource(fileName))	{return;}/*　ソースプログラムファイルのopen　*/
+					/*　openに失敗すれば終わり　*/
+	if (compile()){execute();}			/*　コンパイルして　*/
+					/*　エラーがなければ実行　*/
 	closeSource();			/*　ソースプログラムファイルのclose　*/
 }
 
