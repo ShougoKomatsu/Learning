@@ -143,13 +143,13 @@ void initSource()
 void finalSource()
 {
 	if (s_tokenLast.kind==Period){printcToken();}
-	else{errorInsert(Period);}
+	else{BOOL bRet; bRet = OutputErrorInsert(Period);if(bRet != TRUE){exit(1);}}
 	fprintf(s_fptex,"\n</PRE>\n</BODY>\n</HTML>\n");
 	// 	fprintf(s_fptex,"\n\\end{document}\n");
 }
 
 
-BOOL IncrementErrorCount()			//エラーの個数のカウント、多すぎたら終わり
+int IncrementErrorCount()			//エラーの個数のカウント、多すぎたら終わり
 {
 	if (s_iErrorCount > MAXERROR)
 	{
@@ -157,57 +157,48 @@ BOOL IncrementErrorCount()			//エラーの個数のカウント、多すぎたら終わり
 		fprintf(s_fptex, "too many errors\n</PRE>\n</BODY>\n</HTML>\n");
 		//fprintf(s_fptex, "too many errors\n\\end{document}\n");
 		printf("abort compilation\n");	
-		return FALSE;
+		return ERR_OUTPUT_COUNT_MAX;
 	}
 
 	s_iErrorCount++;
-	return TRUE;
+	return ERR_OUTPUT_NORMAL;
 }
 
-void errorType(char *m)		//型エラーを.html（または.tex）ファイルに出力
+BOOL OutputErrorType(char *m)		//型エラーを.html（または.tex）ファイルに出力
 {
 	printSpaces();
 	fprintf(s_fptex, "<FONT COLOR=%s>%s</FONT>", TYPE_C, m);
 	//fprintf(s_fptex, "\\(\\stackrel{\\mbox{\\scriptsize %s}}{\\mbox{", m);
 	printcToken();
 	//fprintf(s_fptex, "}}\\)");
-	BOOL bRet;
-	bRet = IncrementErrorCount();
-	if(bRet != TRUE){exit (1);}
-
+	return IncrementErrorCount();
 }
 
-void errorInsert(KeyId k)		//keyString(k)を.html（または.tex）ファイルに挿入
+BOOL OutputErrorInsert(KeyId k)		//keyString(k)を.html（または.tex）ファイルに挿入
 {
 	fprintf(s_fptex, "<FONT COLOR=%s><b>%s</b></FONT>", INSERT_C, KeywordTable[k].word);
 	// 	if (k < end_of_KeyWd) 	//予約語
 	//		 fprintf(s_fptex, "\\ \\insert{{\\bf %s}}", KeywordTable[k].word); 
 	//	else 					//演算子か区切り記号
 	//	fprintf(s_fptex, "\\ \\insert{$%s$}", KeywordTable[k].word);
-	BOOL bRet;
-	bRet = IncrementErrorCount();
-	if(bRet != TRUE){exit (1);}
+	return IncrementErrorCount();
 }
 
-void errorMissingId()			//名前がないとのメッセージを.html（または.tex）ファイルに挿入
+int OutputErrorMissingID()			//名前がないとのメッセージを.html（または.tex）ファイルに挿入
 {
 	fprintf(s_fptex, "<FONT COLOR=%s>Id</FONT>", INSERT_C);
 	//fprintf(s_fptex, "\\insert{Id}");
-	BOOL bRet;
-	bRet = IncrementErrorCount();
-	if(bRet != TRUE){exit (1);}
+	return IncrementErrorCount();
 }
 
-void errorMissingOp()		//演算子がないとのメッセージを.html（または.tex）ファイルに挿入
+int OutputErrorMissingOperator()		//演算子がないとのメッセージを.html（または.tex）ファイルに挿入
 {
 	fprintf(s_fptex, "<FONT COLOR=%s>@</FONT>", INSERT_C);
 	//fprintf(s_fptex, "\\insert{$\\otimes$}");
-	BOOL bRet;
-	bRet = IncrementErrorCount();
-	if(bRet != TRUE){exit (1);}
+	return IncrementErrorCount();
 }
 
-void errorDelete()			//今読んだトークンを読み捨てる
+int OutputErrorDelete()			//今読んだトークンを読み捨てる
 {
 	int i=(int)s_tokenLast.kind;
 	printSpaces();
@@ -216,27 +207,27 @@ void errorDelete()			//今読んだトークンを読み捨てる
 	else if (i < end_of_KeySym){fprintf(s_fptex, "<FONT COLOR=%s>%s</FONT>", DELETE_C, KeywordTable[i].word);}					//演算子か区切り記号
 	else if (i==(int)Id){fprintf(s_fptex, "<FONT COLOR=%s>%s</FONT>", DELETE_C, s_tokenLast.u.id);}								//Identfier
 	else if (i==(int)Num){fprintf(s_fptex, "<FONT COLOR=%s>%d</FONT>", DELETE_C, s_tokenLast.u.value);}								//Num
-
+	return ERR_OUTPUT_NORMAL;
 }
 
-BOOL OutputErrMessage(char *m)	//エラーメッセージを.html（または.tex）ファイルに出力
+int OutputErrMessage(char *m)	//エラーメッセージを.html（または.tex）ファイルに出力
 {
 	fprintf(s_fptex, "<FONT COLOR=%s>%s</FONT>", TYPE_C, m);
 	//fprintf(s_fptex, "$^{%s}$", m);
 	return IncrementErrorCount();
 }
 
-void OutputErrAndFinish(char *m)			//エラーメッセージを出力し、コンパイル終了
+int OutputErrAndFinish(char *m)			//エラーメッセージを出力し、コンパイル終了
 {
-	BOOL bRet;
-	bRet = OutputErrMessage(m);
-	if(bRet != TRUE){exit (1);}
+	int iRet;
+	iRet = OutputErrMessage(m);
+	if(iRet <0){return ERR_OUTPUT_COUNT_MAX;}
 
 	fprintf(s_fptex, "fatal errors\n</PRE>\n</BODY>\n</HTML>\n");
 	//fprintf(s_fptex, "fatal errors\n\\end{document}\n");
 	if (s_iErrorCount){printf("total %d errors\n", s_iErrorCount);}
 	printf("abort compilation\n");	
-	exit (1);
+	return ERR_OUTPUT_ABORT;
 }
 
 int errorN()				//エラーの個数を返す
@@ -413,23 +404,30 @@ Token checkGet(Token t, KeyId k)			//t.kind == k のチェック
 	//t を捨て、次のトークンを読んで返す（ t を k で置き換えたことになる）
 	//それ以外の場合、k を挿入したことにして、t を返す
 {
+	int iRet;
 	if (t.kind==k){return ProgressAndGetNextToken();}
 
 	if ((isKeyWd(k) && isKeyWd(t.kind)) )
 	{
-		errorDelete();
-		errorInsert(k);
+		iRet = OutputErrorDelete();
+		if(iRet != TRUE){exit(1);}
+		iRet = OutputErrorInsert(k);
+		if(iRet != TRUE){exit(1);}
 		return ProgressAndGetNextToken();
 	}
 
 	if ((isKeySym(k) && isKeySym(t.kind)))
 	{
-		errorDelete();
-		errorInsert(k);
+		iRet = OutputErrorDelete();
+		if(iRet<0){exit(1);}
+		iRet = OutputErrorInsert(k);
+		if(iRet<0){exit(1);}
 		return ProgressAndGetNextToken();
 	}
 
-	errorInsert(k);
+	iRet = OutputErrorInsert(k);
+	if(iRet <0 ){exit(1);}
+
 	return t;
 }
 

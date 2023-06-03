@@ -162,8 +162,11 @@ int searchT(char *id, KindTable k)		//名前idの名前表の位置を返す
 	if ( i ){return i;}//名前があった
 		
 	//名前がなかった
-	errorType("undef");
-	if (k==varId) {return enterTvar(id);}	//変数の時は仮登録
+	BOOL bRet;
+	bRet = OutputErrorType("undef");
+	if(bRet!=TRUE){return FALSE;}
+
+		if (k==varId) {return enterTvar(id);}	//変数の時は仮登録
 	return 0;
 }
 
