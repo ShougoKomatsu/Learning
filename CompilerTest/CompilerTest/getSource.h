@@ -54,8 +54,8 @@ void errorInsert(KeyId k);		/*　keyString(k)を.texファイルに挿入　*/
 void errorMissingId();		/*　名前がないとのメッセージを.texファイルに挿入　*/
 void errorMissingOp();		/*　演算子がないとのメッセージを.texファイルに挿入　*/
 void errorDelete();			/*　今読んだトークンを読み捨て（.texファイルに出力）*/
-void errorMessage(char *m);	/*　エラーメッセージを.texファイルに出力　*/
-void errorF(char *m);			/*　エラーメッセージを出力し、コンパイル終了　*/
+BOOL OutputErrMessage(char *m);	/*　エラーメッセージを.texファイルに出力　*/
+void OutputErrAndFinish(char *m);			/*　エラーメッセージを出力し、コンパイル終了　*/
 int errorN();				/*　エラーの個数を返す　*/
 
 void setIdKind(KindTable k);     /*　現トークン(Id)の種類をセット（.texファイル出力のため）*/

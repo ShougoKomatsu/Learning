@@ -27,7 +27,7 @@ typedef struct inst
 
 static Inst s_instCode[MAXCODE];		//目的コードが入る
 static int s_iCodeIndex = -1;				//最後に生成した命令語のインデックス
-static void checkMax();	     		 //目的コードのインデックスの増加とチェック
+static void IncrimentCodeIndex();	     		 //目的コードのインデックスの増加とチェック
 static void printCode(int i);		//命令語の印字
 
 int nextCode()					//次の命令語のアドレスを返す
@@ -37,7 +37,7 @@ int nextCode()					//次の命令語のアドレスを返す
 
 int genCodeV(OpCode op, int v)		//命令語の生成、アドレス部にv
 {
-	checkMax();
+	IncrimentCodeIndex();
 	s_instCode[s_iCodeIndex].opCode = op;
 	s_instCode[s_iCodeIndex].u.value = v;
 	return s_iCodeIndex;
@@ -45,7 +45,7 @@ int genCodeV(OpCode op, int v)		//命令語の生成、アドレス部にv
 
 int genCodeT(OpCode op, int ti)		//命令語の生成、アドレスは名前表から
 {
-	checkMax();
+	IncrimentCodeIndex();
 	s_instCode[s_iCodeIndex].opCode = op;
 	s_instCode[s_iCodeIndex].u.addr = relAddr(ti);
 	return s_iCodeIndex;
@@ -53,7 +53,7 @@ int genCodeT(OpCode op, int ti)		//命令語の生成、アドレスは名前表から
 
 int genCodeO(Operator p)			//命令語の生成、アドレス部に演算命令
 {
-	checkMax();
+	IncrimentCodeIndex();
 	s_instCode[s_iCodeIndex].opCode = opr;
 	s_instCode[s_iCodeIndex].u.optr = p;
 	return s_iCodeIndex;
@@ -63,19 +63,19 @@ int genCodeR()					//ret命令語の生成
 {
 	if (s_instCode[s_iCodeIndex].opCode == ret){return s_iCodeIndex;}			//直前がretなら生成せず
 
-	checkMax();
+	IncrimentCodeIndex();
 	s_instCode[s_iCodeIndex].opCode = ret;
 	s_instCode[s_iCodeIndex].u.addr.level = bLevel();
 	s_instCode[s_iCodeIndex].u.addr.addr = fPars();	//パラメタ数（実行スタックの解放用）*/
 	return s_iCodeIndex;
 }
 
-void checkMax()		//目的コードのインデックスの増加とチェック
+void IncrimentCodeIndex()		//目的コードのインデックスの増加とチェック
 {
 	s_iCodeIndex++;
 	if (s_iCodeIndex < MAXCODE){return;}
 
-	errorF("too many code");
+	OutputErrAndFinish("too many code");
 }
 	
 void backPatch(int i)		//命令語のバックパッチ（次の番地を）
@@ -206,7 +206,7 @@ void execute()			//目的コード（命令語）の実行
 		case ict:
 			{
 				top += i.u.value; 
-				if (top >= MAXMEM-MAXREG){errorF("stack overflow");}
+				if (top >= MAXMEM-MAXREG){OutputErrAndFinish("stack overflow");}
 				break;
 			}
 		case jmp: 

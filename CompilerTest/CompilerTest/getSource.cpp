@@ -26,7 +26,7 @@ static int s_iCRNum;				//その前のCRの個数
 static int s_iTokenHasBeenPrinted;			//トークンは印字済みか
 
 static int s_iErrorCount = 0;			//出力したエラーの数
-static char nextChar();		//次の文字を読む関数
+static char GetNextChar();		//次の文字を読む関数
 static int isKeySym(KeyId k);	//tは記号か？
 static int isKeyWd(KeyId k);		//tは予約語か？
 static void printSpaces();		//トークンの前のスペースの印字
@@ -85,40 +85,41 @@ int isKeySym(KeyId k)		//キーkは記号か？
 	return (k < end_of_KeySym);
 }
 
-static KeyId charClassT[256];		//文字の種類を示す表にする
+static KeyId s_ClassTable[256];		//文字の種類を示す表にする
 
-static void initCharClassT()		//文字の種類を示す表を作る関数
+static void CreateClassTable()
 {
-	int i;
-	for (i=0; i<256; i++){charClassT[i] = others;}
-	for (i='0'; i<='9'; i++){charClassT[i] = digit;}
-	for (i='A'; i<='Z'; i++){charClassT[i] = letter;}
-	for (i='a'; i<='z'; i++){charClassT[i] = letter;}
-	charClassT['+'] = Plus; charClassT['-'] = Minus;
-	charClassT['*'] = Mult; charClassT['/'] = Div;
-	charClassT['('] = Lparen; charClassT[')'] = Rparen;
-	charClassT['='] = Equal; charClassT['<'] = Lss;
-	charClassT['>'] = Gtr; charClassT[','] = Comma;
-	charClassT['.'] = Period; charClassT[';'] = Semicolon;
-	charClassT[':'] = colon;
+	for (int i=0; i<256; i++){s_ClassTable[i] = others;}
+	for (int i='0'; i<='9'; i++){s_ClassTable[i] = digit;}
+	for (int i='A'; i<='Z'; i++){s_ClassTable[i] = letter;}
+	for (int i='a'; i<='z'; i++){s_ClassTable[i] = letter;}
+	s_ClassTable['+'] = Plus; 
+	s_ClassTable['-'] = Minus;
+	s_ClassTable['*'] = Mult; 
+	s_ClassTable['/'] = Div;
+	s_ClassTable['('] = Lparen; 
+	s_ClassTable[')'] = Rparen;
+	s_ClassTable['='] = Equal; 
+	s_ClassTable['<'] = Lss;
+	s_ClassTable['>'] = Gtr; 
+	s_ClassTable[','] = Comma;
+	s_ClassTable['.'] = Period; 
+	s_ClassTable[';'] = Semicolon;
+	s_ClassTable[':'] = colon;
 }
 
-int openSource(char fileName[]) 		//ソースファイルのopen
+BOOL openSource(char fileName[]) 		//ソースファイルのopen
 {
 	char fileNameO[30];
-	if ( (s_fpi = fopen(fileName,"r")) == NULL ) 
-	{
-		printf("can't open %s\n", fileName);
-		return 0;
-	}
+	s_fpi = fopen(fileName,"r");
+	if ( s_fpi == NULL ) {printf("can't open %s\n", fileName);return FALSE;}
+
 	strcpy(fileNameO, fileName);
 	strcat(fileNameO,".html");  // strcat(fileNameO,".tex");
-	if ( (s_fptex = fopen(fileNameO,"w")) == NULL ) 
-	{	 //.html（または.tex）ファイルを作る
-		printf("can't open %s\n", fileNameO);
-		return 0;
-	} 
-	return 1;
+
+	s_fptex = fopen(fileNameO,"w");
+	if ( s_fptex  == NULL ) {printf("can't open %s\n", fileNameO);return FALSE;} 
+	return TRUE;
 }
 
 void closeSource()				 //ソースファイルと.html（または.tex）ファイルをclose
@@ -132,7 +133,7 @@ void initSource()
 	s_iLineIndex = -1;				 //初期設定
 	s_cLast= '\n';
 	s_iTokenHasBeenPrinted = 1;
-	initCharClassT();
+	CreateClassTable();
 	fprintf(s_fptex,"<HTML>\n");   //htmlコマンド
 	fprintf(s_fptex,"<HEAD>\n<TITLE>compiled source program</TITLE>\n</HEAD>\n");
 	fprintf(s_fptex,"<BODY>\n<PRE>\n");
@@ -148,7 +149,7 @@ void finalSource()
 }
 
 
-void errorNoCheck()			//エラーの個数のカウント、多すぎたら終わり
+BOOL IncrementErrorCount()			//エラーの個数のカウント、多すぎたら終わり
 {
 	if (s_iErrorCount > MAXERROR)
 	{
@@ -156,9 +157,11 @@ void errorNoCheck()			//エラーの個数のカウント、多すぎたら終わり
 		fprintf(s_fptex, "too many errors\n</PRE>\n</BODY>\n</HTML>\n");
 		//fprintf(s_fptex, "too many errors\n\\end{document}\n");
 		printf("abort compilation\n");	
-		exit (1);
+		return FALSE;
 	}
+
 	s_iErrorCount++;
+	return TRUE;
 }
 
 void errorType(char *m)		//型エラーを.html（または.tex）ファイルに出力
@@ -168,7 +171,10 @@ void errorType(char *m)		//型エラーを.html（または.tex）ファイルに出力
 	//fprintf(s_fptex, "\\(\\stackrel{\\mbox{\\scriptsize %s}}{\\mbox{", m);
 	printcToken();
 	//fprintf(s_fptex, "}}\\)");
-	errorNoCheck();
+	BOOL bRet;
+	bRet = IncrementErrorCount();
+	if(bRet != TRUE){exit (1);}
+
 }
 
 void errorInsert(KeyId k)		//keyString(k)を.html（または.tex）ファイルに挿入
@@ -178,21 +184,27 @@ void errorInsert(KeyId k)		//keyString(k)を.html（または.tex）ファイルに挿入
 	//		 fprintf(s_fptex, "\\ \\insert{{\\bf %s}}", KeywordTable[k].word); 
 	//	else 					//演算子か区切り記号
 	//	fprintf(s_fptex, "\\ \\insert{$%s$}", KeywordTable[k].word);
-	errorNoCheck();
+	BOOL bRet;
+	bRet = IncrementErrorCount();
+	if(bRet != TRUE){exit (1);}
 }
 
 void errorMissingId()			//名前がないとのメッセージを.html（または.tex）ファイルに挿入
 {
 	fprintf(s_fptex, "<FONT COLOR=%s>Id</FONT>", INSERT_C);
 	//fprintf(s_fptex, "\\insert{Id}");
-	errorNoCheck();
+	BOOL bRet;
+	bRet = IncrementErrorCount();
+	if(bRet != TRUE){exit (1);}
 }
 
 void errorMissingOp()		//演算子がないとのメッセージを.html（または.tex）ファイルに挿入
 {
 	fprintf(s_fptex, "<FONT COLOR=%s>@</FONT>", INSERT_C);
 	//fprintf(s_fptex, "\\insert{$\\otimes$}");
-	errorNoCheck();
+	BOOL bRet;
+	bRet = IncrementErrorCount();
+	if(bRet != TRUE){exit (1);}
 }
 
 void errorDelete()			//今読んだトークンを読み捨てる
@@ -207,16 +219,19 @@ void errorDelete()			//今読んだトークンを読み捨てる
 
 }
 
-void errorMessage(char *m)	//エラーメッセージを.html（または.tex）ファイルに出力
+BOOL OutputErrMessage(char *m)	//エラーメッセージを.html（または.tex）ファイルに出力
 {
 	fprintf(s_fptex, "<FONT COLOR=%s>%s</FONT>", TYPE_C, m);
 	//fprintf(s_fptex, "$^{%s}$", m);
-	errorNoCheck();
+	return IncrementErrorCount();
 }
 
-void errorF(char *m)			//エラーメッセージを出力し、コンパイル終了
+void OutputErrAndFinish(char *m)			//エラーメッセージを出力し、コンパイル終了
 {
-	errorMessage(m);
+	BOOL bRet;
+	bRet = OutputErrMessage(m);
+	if(bRet != TRUE){exit (1);}
+
 	fprintf(s_fptex, "fatal errors\n</PRE>\n</BODY>\n</HTML>\n");
 	//fprintf(s_fptex, "fatal errors\n\\end{document}\n");
 	if (s_iErrorCount){printf("total %d errors\n", s_iErrorCount);}
@@ -229,7 +244,7 @@ int errorN()				//エラーの個数を返す
 	return s_iErrorCount;
 }
 
-char nextChar()				//次の１文字を返す関数
+char GetNextChar()				//次の１文字を返す関数
 {
 	char ch;
 	if (s_iLineIndex == -1)
@@ -242,7 +257,7 @@ char nextChar()				//次の１文字を返す関数
 		} 
 		else 
 		{
-			errorF("end of file\n");      // end of fileならコンパイル終了
+			OutputErrAndFinish("end of file\n");      // end of fileならコンパイル終了
 		}
 	}
 
@@ -281,9 +296,9 @@ Token ProgressAndGetNextToken()			//次のトークンを読んで返す関数
 			s_iCRNum++;
 		}
 		else {break;}
-		s_cLast= nextChar();
+		s_cLast= GetNextChar();
 	}
-	switch (cc = charClassT[s_cLast]) 
+	switch (cc = s_ClassTable[s_cLast]) 
 	{
 	case letter:
 		{//identifier
@@ -291,13 +306,16 @@ Token ProgressAndGetNextToken()			//次のトークンを読んで返す関数
 			{
 				if (i < MAXNAME){ident[i] = s_cLast;}
 				i++; 
-				s_cLast= nextChar();
-			} while (  charClassT[s_cLast] == letter	|| charClassT[s_cLast] == digit );
+				s_cLast= GetNextChar();
+			} while (  s_ClassTable[s_cLast] == letter	|| s_ClassTable[s_cLast] == digit );
 
 
 			if (i >= MAXNAME)
 			{
-				errorMessage("too long");
+				BOOL bRet;
+				bRet = OutputErrMessage("too long");
+					if(bRet != TRUE){exit (1);}
+
 				i = MAXNAME - 1;
 			}	
 			ident[i] = '\0'; 
@@ -322,19 +340,24 @@ Token ProgressAndGetNextToken()			//次のトークンを読んで返す関数
 			{
 				num = 10*num+(s_cLast-'0');
 				i++; 
-				s_cLast= nextChar();
-			} while (charClassT[s_cLast] == digit);
+				s_cLast= GetNextChar();
+			} while (s_ClassTable[s_cLast] == digit);
 
-			if (i>MAXNUM){errorMessage("too large");}
+			if (i>MAXNUM)
+			{
+				BOOL bRet;
+				bRet = OutputErrMessage("too large");
+					if(bRet != TRUE){exit (1);}
+			}
 			temp.kind = Num;
 			temp.u.value = num;
 			break;
 		}
 	case colon:
 		{
-			if ((s_cLast= nextChar()) == '=') 
+			if ((s_cLast= GetNextChar()) == '=') 
 			{
-				s_cLast= nextChar();
+				s_cLast= GetNextChar();
 				temp.kind = Assign;		//":="
 				break;
 			} 
@@ -344,16 +367,16 @@ Token ProgressAndGetNextToken()			//次のトークンを読んで返す関数
 		}
 	case Lss:
 		{
-			if ((s_cLast= nextChar()) == '=') 
+			if ((s_cLast= GetNextChar()) == '=') 
 			{
-				s_cLast= nextChar();
+				s_cLast= GetNextChar();
 				temp.kind = LssEq;		//"<="
 				break;
 			} 
 
 			if (s_cLast== '>') 
 			{
-				s_cLast= nextChar();
+				s_cLast= GetNextChar();
 				temp.kind = NotEq;		//"<>"
 				break;
 			} 
@@ -363,9 +386,9 @@ Token ProgressAndGetNextToken()			//次のトークンを読んで返す関数
 		}
 	case Gtr:
 		{
-			if ((s_cLast= nextChar()) == '=') 
+			if ((s_cLast= GetNextChar()) == '=') 
 			{
-				s_cLast= nextChar();
+				s_cLast= GetNextChar();
 				temp.kind = GtrEq;		//">="
 				break;
 			} 
@@ -375,7 +398,7 @@ Token ProgressAndGetNextToken()			//次のトークンを読んで返す関数
 	default:
 		{
 			temp.kind = cc;
-			s_cLast= nextChar(); 
+			s_cLast= GetNextChar(); 
 			break;
 		}
 	}

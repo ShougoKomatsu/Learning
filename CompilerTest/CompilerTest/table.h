@@ -25,7 +25,7 @@ void changeV(int ti, int newVal);	//名前表[ti]の値（関数の先頭番地）の変更
 
 int searchT(char *id, KindTable k);	//名前idの名前表の位置を返す
 						//未宣言の時エラーとする
-KindTable kindT(int i);			//名前表[i]の種類を返す
+KindTable GetKind(int i);			//名前表[i]の種類を返す
 
 RelAddr relAddr(int ti);		//名前表[ti]のアドレスを返す
 int val(int ti);				//名前表[ti]のvalueを返す

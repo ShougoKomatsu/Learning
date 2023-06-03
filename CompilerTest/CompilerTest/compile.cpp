@@ -19,11 +19,11 @@ static void constDecl();			//定数宣言のコンパイル
 static void varDecl();				//変数宣言のコンパイル
 static void funcDecl();			//関数宣言のコンパイル
 
-static void CompileTheStatement();			//文のコンパイル
-static void CompileTheExpression();			//式のコンパイル
-static void CompileTheTerm();				//式の項のコンパイル
-static void CompileTheFactor();				//式の因子のコンパイル
-static void CompileTheCondition();			//条件式のコンパイル
+static BOOL CompileTheStatement();			//文のコンパイル
+static BOOL CompileTheExpression();			//式のコンパイル
+static BOOL CompileTheTerm();				//式の項のコンパイル
+static BOOL CompileTheFactor();				//式の因子のコンパイル
+static BOOL CompileTheCondition();			//条件式のコンパイル
 static BOOL IsStartWithBeginKey(Token t);		//トークンtは文の先頭のキーか？
 
 int compile()
@@ -195,11 +195,12 @@ void funcDecl()			//関数宣言のコンパイル
 
 }
 
-void CompileTheStatement()			//文のコンパイル
+BOOL CompileTheStatement()			//文のコンパイル
 {
 	int tIndex;
 	KindTable k;
 	int backP, backP2;				//バックパッチ用
+				BOOL bRet;
 
 	while(1) 
 	{
@@ -208,13 +209,15 @@ void CompileTheStatement()			//文のコンパイル
 		case Id:
 			{//代入文のコンパイル
 				tIndex = searchT(s_Token.u.id, varId);	//左辺の変数のインデックス
-				setIdKind(k=kindT(tIndex));			//印字のための情報のセット
+				setIdKind(k=GetKind(tIndex));			//印字のための情報のセット
 				if (k != varId && k != parId){errorType("var/par");} 		//変数名かパラメタ名のはず
-					
+
 				s_Token = checkGet(ProgressAndGetNextToken(), Assign);			//":="のはず
-				CompileTheExpression();	
+				bRet = CompileTheExpression();
+				if(bRet != TRUE){return FALSE;}
+
 				genCodeT(sto, tIndex);				//左辺への代入命令
-				return;
+				return TRUE;
 			}
 		case If:
 			{//if文のコンパイル
@@ -222,16 +225,18 @@ void CompileTheStatement()			//文のコンパイル
 				CompileTheCondition();					//条件式のコンパイル
 				s_Token = checkGet(s_Token, Then);		//"then"のはず
 				backP = genCodeV(jpc, 0);			//jpc命令
-				CompileTheStatement();					//文のコンパイル
+				bRet = CompileTheStatement();					//文のコンパイル
+				if(bRet != TRUE){return FALSE;}
 				backPatch(backP);				//上のjpc命令にバックパッチ
-				return;
+				return TRUE;
 			}
 		case Ret:
 			{//return文のコンパイル
 				s_Token = ProgressAndGetNextToken();
-				CompileTheExpression();	
+				bRet = CompileTheExpression();
+				if(bRet != TRUE){return FALSE;}
 				genCodeR();					//ret命令
-				return;
+				return TRUE;
 			}
 		case Begin:
 			{
@@ -239,7 +244,8 @@ void CompileTheStatement()			//文のコンパイル
 				s_Token = ProgressAndGetNextToken();
 				while(1)
 				{
-					CompileTheStatement();				//文のコンパイル
+					bRet = CompileTheStatement();				//文のコンパイル
+					if(bRet != TRUE){return FALSE;}
 					while(1)
 					{
 						if (s_Token.kind==Semicolon)
@@ -250,7 +256,7 @@ void CompileTheStatement()			//文のコンパイル
 						if (s_Token.kind==End)
 						{			//次がendなら終り
 							s_Token = ProgressAndGetNextToken();
-							return;
+							return TRUE;
 						}
 						if (IsStartWithBeginKey(s_Token)==TRUE)
 						{		//次が文の先頭記号なら
@@ -269,26 +275,28 @@ void CompileTheStatement()			//文のコンパイル
 				CompileTheCondition();				//条件式のコンパイル
 				s_Token = checkGet(s_Token, Do);	//"do"のはず
 				backP = genCodeV(jpc, 0);		//条件式が偽のとき飛び出すjpc命令
-				CompileTheStatement();				//文のコンパイル
+				bRet = CompileTheStatement();				//文のコンパイル
+				if(bRet != TRUE){return FALSE;}
 				genCodeV(jmp, backP2);		//while文の先頭へのジャンプ命令
 				backPatch(backP);	//偽のとき飛び出すjpc命令へのバックパッチ
-				return;
+				return TRUE;
 			}
 		case Write:
 			{			//write文のコンパイル
 				s_Token = ProgressAndGetNextToken();
-				CompileTheExpression();
+				bRet = CompileTheExpression();
+				if(bRet != TRUE){return FALSE;}
 				genCodeO(wrt);				//その値を出力するwrt命令
-				return;
+				return TRUE;
 			}
 		case WriteLn:
 			{			//writeln文のコンパイル
 				s_Token = ProgressAndGetNextToken();
 				genCodeO(wrl);				//改行を出力するwrl命令
-				return;
+				return TRUE;
 			}
-		case End:			{return;}	
-		case Semicolon:	{return;}		//空文を読んだことにして終り
+		case End:			{return TRUE;}	
+		case Semicolon:	{return TRUE;}		//空文を読んだことにして終り
 
 		default:
 			{//文の先頭のキーまで読み捨てる
@@ -298,6 +306,7 @@ void CompileTheStatement()			//文のコンパイル
 			}
 		}		
 	}
+	return TRUE;
 }
 
 BOOL IsStartWithBeginKey(Token t)			//トークンtは文の先頭のキーか？
@@ -314,14 +323,17 @@ BOOL IsStartWithBeginKey(Token t)			//トークンtは文の先頭のキーか？
 	}
 }
 
-void CompileTheExpression()
+BOOL CompileTheExpression()
 {
 	KeyId k;
 	k = s_Token.kind;
 	if (k==Plus || k==Minus)
 	{
 		s_Token = ProgressAndGetNextToken();
-		CompileTheTerm();
+		BOOL bRet;
+		bRet = CompileTheTerm();
+		if(bRet != TRUE){return FALSE;}
+
 		if (k==Minus)
 		{
 			genCodeO(neg);
@@ -341,32 +353,39 @@ void CompileTheExpression()
 		else{genCodeO(add);}
 		k = s_Token.kind;
 	}
+	return TRUE;
 }
 
-void CompileTheTerm()					//式の項のコンパイル
+BOOL CompileTheTerm()					//式の項のコンパイル
 {
 	KeyId k;
-	CompileTheFactor();
+	BOOL bRet;
+	bRet = CompileTheFactor();
+	if(bRet != TRUE){exit(1);}
+
 	k = s_Token.kind;
 	while (k==Mult || k==Div)
 	{	
 		s_Token = ProgressAndGetNextToken();
-		CompileTheFactor();
+		bRet = CompileTheFactor();
+		if(bRet != TRUE){return FALSE;}
+
 		if (k==Mult){genCodeO(mul);}
 		else{genCodeO(div_);}
 		k = s_Token.kind;
 	}
+	return TRUE;
 }
 
-void CompileTheFactor()					//式の因子のコンパイル
+BOOL CompileTheFactor()					//式の因子のコンパイル
 {
 	int tIndex, i;
 	KeyId k;
 	if (s_Token.kind==Id)
 	{
 		tIndex = searchT(s_Token.u.id, varId);
-		k=static_cast<KeyId>(kindT(tIndex));
-		setIdKind(kindT(tIndex));			//印字のための情報のセット
+		k=static_cast<KeyId>(GetKind(tIndex));
+		setIdKind(GetKind(tIndex));			//印字のための情報のセット
 		switch (k) 
 		{
 		case varId:
@@ -407,7 +426,13 @@ void CompileTheFactor()					//式の因子のコンパイル
 						}
 					} 
 					else{s_Token = ProgressAndGetNextToken();}
-					if (pars(tIndex) != i) {errorMessage("\\#par");}	//pars(tIndex)は仮引数の個数
+					if (pars(tIndex) != i)
+					{
+						BOOL bRet;
+						bRet = OutputErrMessage("\\#par");
+						if(bRet != TRUE){return FALSE;}
+
+					}	//pars(tIndex)は仮引数の個数
 				}
 				else
 				{
@@ -436,41 +461,55 @@ void CompileTheFactor()					//式の因子のコンパイル
 	case Id: 
 		{
 			errorMissingOp();
-			CompileTheFactor();
-			return;
+			BOOL bRet;
+			bRet = CompileTheFactor();
+			if(bRet != TRUE){return FALSE;}
+
+			return TRUE;
 		}
 	case Num: 
 		{
 			errorMissingOp();
-			CompileTheFactor();
-			return;
+			BOOL bRet;
+			bRet = CompileTheFactor();
+			if(bRet != TRUE){return FALSE;}
+
+			return TRUE;
 		}
 	case Lparen:
 		{
 			errorMissingOp();
-			CompileTheFactor();
-			return;
+			BOOL bRet;
+			bRet = CompileTheFactor();
+			if(bRet != TRUE){return FALSE;}
+
+			return TRUE;
 		}
 	default:
 		{
-			return;
+			return TRUE;
 		}
 	}	
+	return FALSE;
 }
 
-void CompileTheCondition()					//条件式のコンパイル
+BOOL CompileTheCondition()					//条件式のコンパイル
 {
 	KeyId k;
+	BOOL bRet;
 	if (s_Token.kind==Odd)
 	{
 		s_Token = ProgressAndGetNextToken();
-		CompileTheExpression();
+		bRet = CompileTheExpression();
+		if(bRet!=TRUE){return FALSE;}
 		genCodeO(odd);
-		return;
+		return TRUE;
 	}
 
-	CompileTheExpression();
-	k = s_Token.kind;
+	bRet = CompileTheExpression();
+		if(bRet!=TRUE){return FALSE;}
+
+		k = s_Token.kind;
 	switch(k)
 	{
 	case Equal: {break;}
@@ -488,8 +527,10 @@ void CompileTheCondition()					//条件式のコンパイル
 	}
 
 	s_Token = ProgressAndGetNextToken();
-	CompileTheExpression();
-	switch(k)
+	bRet = CompileTheExpression();
+		if(bRet!=TRUE){return FALSE;}
+
+		switch(k)
 	{
 	case Equal:	{genCodeO(eq); break;}
 	case Lss:	{genCodeO(ls); break;}
@@ -498,5 +539,6 @@ void CompileTheCondition()					//条件式のコンパイル
 	case LssEq:	{genCodeO(lseq); break;}
 	case GtrEq:	{genCodeO(greq); break;}
 	}
+	return TRUE;
 }
 

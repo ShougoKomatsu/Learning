@@ -57,7 +57,7 @@ void blockBegin(int firstAddr)	//ブロックの始まり(最初の変数の番地)で呼ばれる
 	}
 	if (s_iBlockLevel == MAXLEVEL-1)
 	{
-		errorF("too many nested blocks");
+		OutputErrAndFinish("too many nested blocks");
 	}
 	s_iBlockindex[s_iBlockLevel] = s_iNameIndex;		//今までのブロックの情報を格納
 	s_iValAddress[s_iBlockLevel] = s_iLocalValAddress;
@@ -93,7 +93,7 @@ void enterT(char *id)			//名前表に名前を登録
 	else 
 	{
 		s_iNameIndex++;
-		errorF("too many names");
+		OutputErrAndFinish("too many names");
 	}
 }
 
@@ -167,7 +167,7 @@ int searchT(char *id, KindTable k)		//名前idの名前表の位置を返す
 	return 0;
 }
 
-KindTable kindT(int i)				//名前表[i]の種類を返す
+KindTable GetKind(int i)				//名前表[i]の種類を返す
 {
 	return s_tableName[i].kind;
 }
