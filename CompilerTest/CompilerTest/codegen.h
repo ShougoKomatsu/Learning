@@ -1,18 +1,36 @@
 #include "stdafx.h"
   /******************** codegen.h ********************/
 
-typedef enum codes{			//命令語のコード
-	lit, opr, lod, sto, cal, ret, ict, jmp, jpc
-}OperationCode;
+//命令語のコード
+#define OPERATION_CODE_LIT (1)
+#define OPERATION_CODE_OPR (2)
+#define OPERATION_CODE_LOD (3)
+#define OPERATION_CODE_STO (4)
+#define OPERATION_CODE_CAL (5)
+#define OPERATION_CODE_RET (6)
+#define OPERATION_CODE_ICT (7)
+#define OPERATION_CODE_JMP (8)
+#define OPERATION_CODE_JPC (9)
 
-typedef enum ops{			//演算命令のコード
-	neg, add, sub, mul, div_, odd, eq, ls, gr,
-	neq, lseq, greq, wrt, wrl
-}Operator;
 
-int genCodeV(OperationCode op, int v);		//命令語の生成、アドレス部にv
-int genCodeT(OperationCode op, int ti);		//命令語の生成、アドレスは名前表から
-int genCodeO(Operator p);			//命令語の生成、アドレス部に演算命令
+#define OPERATOR_NEG (1)
+#define OPERATOR_ADD (2)
+#define OPERATOR_SUB (3)
+#define OPERATOR_MUL (4)
+#define OPERATOR_DIV (5)
+#define OPERATOR_ODD (6)
+#define OPERATOR_EQ (7)
+#define OPERATOR_LS (8)
+#define OPERATOR_GR (9)
+#define OPERATOR_NEQ (10)
+#define OPERATOR_LSEQ (11)
+#define OPERATOR_GREQ (12)
+#define OPERATOR_WRT (13)
+#define OPERATOR_WRL (14)
+
+int genCodeV(int op, int v);		//命令語の生成、アドレス部にv
+int genCodeT(int op, int ti);		//命令語の生成、アドレスは名前表から
+int genCodeO(int p);			//命令語の生成、アドレス部に演算命令
 int genCodeR();					//ret命令語の生成
 void backPatch(int i);			//命令語のバックパッチ（次の番地を）
 

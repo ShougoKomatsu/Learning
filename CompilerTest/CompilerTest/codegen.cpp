@@ -16,12 +16,12 @@
 
 typedef struct inst
 {				//命令語の型
-	OperationCode opCode;
+	int opCode;
 	union
 	{
 		RelAddr addr;
 		int value;
-		Operator optr;
+		int optr;
 	}u;
 }Inst;
 
@@ -35,7 +35,7 @@ int GetNextCodeIndex()					//次の命令語のアドレスを返す
 	return s_iCodeIndex +1;
 }
 
-int genCodeV(OperationCode op, int v)		//命令語の生成、アドレス部にv
+int genCodeV(int op, int v)		//命令語の生成、アドレス部にv
 {
 	IncrimentCodeIndex();
 	s_instCode[s_iCodeIndex].opCode = op;
@@ -43,7 +43,7 @@ int genCodeV(OperationCode op, int v)		//命令語の生成、アドレス部にv
 	return s_iCodeIndex;
 }
 
-int genCodeT(OperationCode op, int ti)		//命令語の生成、アドレスは名前表から
+int genCodeT(int op, int ti)		//命令語の生成、アドレスは名前表から
 {
 	IncrimentCodeIndex();
 	s_instCode[s_iCodeIndex].opCode = op;
@@ -51,20 +51,20 @@ int genCodeT(OperationCode op, int ti)		//命令語の生成、アドレスは名前表から
 	return s_iCodeIndex;
 }
 
-int genCodeO(Operator p)			//命令語の生成、アドレス部に演算命令
+int genCodeO(int p)			//命令語の生成、アドレス部に演算命令
 {
 	IncrimentCodeIndex();
-	s_instCode[s_iCodeIndex].opCode = opr;
+	s_instCode[s_iCodeIndex].opCode = OPERATION_CODE_OPR;
 	s_instCode[s_iCodeIndex].u.optr = p;
 	return s_iCodeIndex;
 }
 
 int genCodeR()					//ret命令語の生成
 {
-	if (s_instCode[s_iCodeIndex].opCode == ret){return s_iCodeIndex;}			//直前がretなら生成せず
+	if (s_instCode[s_iCodeIndex].opCode == OPERATION_CODE_RET){return s_iCodeIndex;}			//直前がretなら生成せず
 
 	IncrimentCodeIndex();
-	s_instCode[s_iCodeIndex].opCode = ret;
+	s_instCode[s_iCodeIndex].opCode = OPERATION_CODE_RET;
 	s_instCode[s_iCodeIndex].u.addr.level = iGetBlockLevel();
 	s_instCode[s_iCodeIndex].u.addr.addr = GetFunctionParameterNum();	//パラメタ数（実行スタックの解放用）*/
 	return s_iCodeIndex;
@@ -99,15 +99,15 @@ void printCode(int i)		//命令語の印字
 	int flag;
 	switch(s_instCode[i].opCode)
 	{
-	case lit: {printf("lit"); flag=1; break;}
-	case opr: {printf("opr"); flag=3; break;}
-	case lod: {printf("lod"); flag=2; break;}
-	case sto: {printf("sto"); flag=2; break;}
-	case cal: {printf("cal"); flag=2; break;}
-	case ret: {printf("ret"); flag=2; break;}
-	case ict: {printf("ict"); flag=1; break;}
-	case jmp: {printf("jmp"); flag=1; break;}
-	case jpc: {printf("jpc"); flag=1; break;}
+	case OPERATION_CODE_LIT: {printf("lit"); flag=1; break;}
+	case OPERATION_CODE_OPR: {printf("opr"); flag=3; break;}
+	case OPERATION_CODE_LOD: {printf("lod"); flag=2; break;}
+	case OPERATION_CODE_STO: {printf("sto"); flag=2; break;}
+	case OPERATION_CODE_CAL: {printf("cal"); flag=2; break;}
+	case OPERATION_CODE_RET: {printf("ret"); flag=2; break;}
+	case OPERATION_CODE_ICT: {printf("ict"); flag=1; break;}
+	case OPERATION_CODE_JMP: {printf("jmp"); flag=1; break;}
+	case OPERATION_CODE_JPC: {printf("jpc"); flag=1; break;}
 	}
 
 	switch(flag)
@@ -127,20 +127,20 @@ void printCode(int i)		//命令語の印字
 		{
 			switch(s_instCode[i].u.optr)
 			{
-			case neg: printf(",neg\n"); {return;}
-			case add: printf(",add\n"); {return;}
-			case sub: printf(",sub\n"); {return;}
-			case mul: printf(",mul\n"); {return;}
-			case div_: printf(",div\n"); {return;}
-			case odd: printf(",odd\n"); {return;}
-			case eq: printf(",eq\n"); {return;}
-			case ls: printf(",ls\n"); {return;}
-			case gr: printf(",gr\n"); {return;}
-			case neq: printf(",neq\n"); {return;}
-			case lseq: printf(",lseq\n"); {return;}
-			case greq: printf(",greq\n"); {return;}
-			case wrt: printf(",wrt\n"); {return;}
-			case wrl: printf(",wrl\n"); {return;}
+			case OPERATOR_NEG: printf(",neg\n"); {return;}
+			case OPERATOR_ADD: printf(",add\n"); {return;}
+			case OPERATOR_SUB: printf(",sub\n"); {return;}
+			case OPERATOR_MUL: printf(",mul\n"); {return;}
+			case OPERATOR_DIV: printf(",div\n"); {return;}
+			case OPERATOR_ODD: printf(",odd\n"); {return;}
+			case OPERATOR_EQ: printf(",eq\n"); {return;}
+			case OPERATOR_LS: printf(",ls\n"); {return;}
+			case OPERATOR_GR: printf(",gr\n"); {return;}
+			case OPERATOR_NEQ: printf(",neq\n"); {return;}
+			case OPERATOR_LSEQ: printf(",lseq\n"); {return;}
+			case OPERATOR_GREQ: printf(",greq\n"); {return;}
+			case OPERATOR_WRT: printf(",wrt\n"); {return;}
+			case OPERATOR_WRL: printf(",wrl\n"); {return;}
 			}
 		}
 	}
@@ -163,25 +163,25 @@ void execute()			//目的コード（命令語）の実行
 		pc++;
 		switch(i.opCode)
 		{
-		case lit:
+		case OPERATION_CODE_LIT:
 			{
 				stack[top] = i.u.value; 
 				top++;
 				break;
 			}
-		case lod:
+		case OPERATION_CODE_LOD:
 			{
 				stack[top] = stack[display[i.u.addr.level] + i.u.addr.addr]; 
 				top++;
 				break;
 			}
-		case sto: 
+		case OPERATION_CODE_STO: 
 			{
 				top--;
 				stack[display[i.u.addr.level] + i.u.addr.addr] = stack[top]; 
 				break;
 			}
-		case cal:
+		case OPERATION_CODE_CAL:
 			{
 				lev = i.u.addr.level +1;		// i.u.addr.levelはcalleeの名前のレベル
 				// calleeのブロックのレベルlevはそれに＋１したもの
@@ -191,7 +191,7 @@ void execute()			//目的コード（命令語）の実行
 				pc = i.u.addr.addr;
 				break;
 			}
-		case ret: 
+		case OPERATION_CODE_RET: 
 			{
 				top--;
 				temp = stack[top];		//スタックのトップにあるものが返す値
@@ -203,40 +203,40 @@ void execute()			//目的コード（命令語）の実行
 				top++;
 				break;
 			}
-		case ict:
+		case OPERATION_CODE_ICT:
 			{
 				top += i.u.value; 
 				if (top >= MAXMEM-MAXREG){OutputErrAndFinish("stack overflow");}
 				break;
 			}
-		case jmp: 
+		case OPERATION_CODE_JMP: 
 			{
 				pc = i.u.value; 
 				break;
 			}
-		case jpc: 
+		case OPERATION_CODE_JPC: 
 			{
 				top--;
 				if (stack[top] == 0){pc = i.u.value;}
 				break;
 			}
-		case opr: 
+		case OPERATION_CODE_OPR: 
 			switch(i.u.optr)
 			{
-			case neg:{ stack[top-1] = -stack[top-1]; continue;}
-			case add:{ top--; stack[top-1] += stack[top]; continue;}
-			case sub:{ top--; stack[top-1] -= stack[top]; continue;}
-			case mul:{ top--; stack[top-1] *= stack[top]; continue;}
-			case div_:{ --top; stack[top-1] /= stack[top]; continue;}
-			case odd:{ stack[top-1] = stack[top-1] & 1; continue;}
-			case eq:{ top--; stack[top-1] = (stack[top-1] == stack[top]); continue;}
-			case ls:{ top--; stack[top-1] = (stack[top-1] < stack[top]); continue;}
-			case gr:{ top--; stack[top-1] = (stack[top-1] > stack[top]); continue;}
-			case neq:{ top--; stack[top-1] = (stack[top-1] != stack[top]); continue;}
-			case lseq:{ top--; stack[top-1] = (stack[top-1] <= stack[top]); continue;}
-			case greq:{ top--; stack[top-1] = (stack[top-1] >= stack[top]); continue;}
-			case wrt:{ top--; printf("%d ", stack[top]); continue;}
-			case wrl:{ printf("\n"); continue;}
+			case OPERATOR_NEG:{ stack[top-1] = -stack[top-1]; continue;}
+			case OPERATOR_ADD:{ top--; stack[top-1] += stack[top]; continue;}
+			case OPERATOR_SUB:{ top--; stack[top-1] -= stack[top]; continue;}
+			case OPERATOR_MUL:{ top--; stack[top-1] *= stack[top]; continue;}
+			case OPERATOR_DIV:{ --top; stack[top-1] /= stack[top]; continue;}
+			case OPERATOR_ODD:{ stack[top-1] = stack[top-1] & 1; continue;}
+			case OPERATOR_EQ:{ top--; stack[top-1] = (stack[top-1] == stack[top]); continue;}
+			case OPERATOR_LS:{ top--; stack[top-1] = (stack[top-1] < stack[top]); continue;}
+			case OPERATOR_GR:{ top--; stack[top-1] = (stack[top-1] > stack[top]); continue;}
+			case OPERATOR_NEQ:{ top--; stack[top-1] = (stack[top-1] != stack[top]); continue;}
+			case OPERATOR_LSEQ:{ top--; stack[top-1] = (stack[top-1] <= stack[top]); continue;}
+			case OPERATOR_GREQ:{ top--; stack[top-1] = (stack[top-1] >= stack[top]); continue;}
+			case OPERATOR_WRT:{ top--; printf("%d ", stack[top]); continue;}
+			case OPERATOR_WRL:{ printf("\n"); continue;}
 			}
 		}
 	} while (pc != 0);

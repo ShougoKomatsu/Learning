@@ -47,10 +47,10 @@ int CompileTheBlock(int pIndex)		//pIndex はこのブロックの関数名のインデックス
 {
 	int iRet;
 	int intBackPatchNum;
-	intBackPatchNum = genCodeV(jmp, 0);		//内部関数を飛び越す命令、後でバックパッチ
+	intBackPatchNum = genCodeV(OPERATION_CODE_JMP, 0);		//内部関数を飛び越す命令、後でバックパッチ
 	while (1) 
 	{				//宣言部のコンパイルを繰り返す
-		switch (s_Token.kind)
+		switch (s_Token.m_iKind)
 		{
 		case KIND_CONST:
 			{
@@ -86,7 +86,7 @@ int CompileTheBlock(int pIndex)		//pIndex はこのブロックの関数名のインデックス
 	}			
 	backPatch(intBackPatchNum);			//内部関数を飛び越す命令にパッチ
 	changeV(pIndex, GetNextCodeIndex());	//この関数の開始番地を修正
-	genCodeV(ict, frameL());		//このブロックの実行時の必要記憶域をとる命令
+	genCodeV(OPERATION_CODE_ICT, frameL());		//このブロックの実行時の必要記憶域をとる命令
 	iRet = CompileTheStatement();				//このブロックの主文		
 	if(iRet != TRUE){return iRet;}
 	genCodeR();				//リターン命令
@@ -100,12 +100,12 @@ int constDecl()			//定数宣言のコンパイル
 	int iRet;
 	while(1)
 	{
-		if (s_Token.kind == KIND_ID)
+		if (s_Token.m_iKind == KIND_ID)
 		{
-			setIdKind(constId);				//印字のための情報のセット
+			setIdKind(KIND_constId);				//印字のための情報のセット
 			temp = s_Token; 					//名前を入れておく
 			s_Token = GetTokenWithCheck(ProgressAndGetNextToken(), KIND_EQUAL);		//名前の次は"="のはず
-			if (s_Token.kind == KIND_NUM)
+			if (s_Token.m_iKind == KIND_NUM)
 			{
 				RegisterConstName(temp.u.szIdentifier, s_Token.u.value);	//定数名と値をテーブルに
 			}
@@ -122,9 +122,9 @@ int constDecl()			//定数宣言のコンパイル
 			if(iRet < iRet){return iRet;}
 		}
 
-		if (s_Token.kind != KIND_COMMA)
+		if (s_Token.m_iKind != KIND_COMMA)
 		{		//次がコンマなら定数宣言が続く
-			if (s_Token.kind != KIND_ID){break;}
+			if (s_Token.m_iKind != KIND_ID){break;}
 			//次が名前ならコンマを忘れたことにする
 			iRet = OutputErrorInsert(KIND_COMMA);
 			if(iRet < 0){return iRet;}
@@ -141,9 +141,9 @@ int varDecl()				//変数宣言のコンパイル
 	int iRet;
 	while(1)
 	{
-		if (s_Token.kind == KIND_ID)
+		if (s_Token.m_iKind == KIND_ID)
 		{
-			setIdKind(varId);		//印字のための情報のセット
+			setIdKind(KIND_varId);		//印字のための情報のセット
 			RegisterVarName(s_Token.u.szIdentifier);		//変数名をテーブルに、番地はtableが決める
 			s_Token = ProgressAndGetNextToken();
 		}
@@ -153,9 +153,9 @@ int varDecl()				//変数宣言のコンパイル
 			if(iRet < 0 ){return iRet;}
 		}
 
-		if (s_Token.kind != KIND_COMMA)
+		if (s_Token.m_iKind != KIND_COMMA)
 		{		//次がコンマなら変数宣言が続く
-			if (s_Token.kind != KIND_ID){break;}
+			if (s_Token.m_iKind != KIND_ID){break;}
 
 			//次が名前ならコンマを忘れたことにする
 			iRet = OutputErrorInsert(KIND_COMMA);
@@ -171,7 +171,7 @@ int funcDecl()			//関数宣言のコンパイル
 {
 	int iRet;
 	int iFuncIndex ;
-	if (s_Token.kind != KIND_ID)
+	if (s_Token.m_iKind != KIND_ID)
 	{
 		iRet = OutputErrorMissingID();			//関数名がない
 		if(iRet < 0){return iRet;}
@@ -179,23 +179,23 @@ int funcDecl()			//関数宣言のコンパイル
 	}
 
 
-	setIdKind(funcId);				//印字のための情報のセット
+	setIdKind(KIND_funcId);				//印字のための情報のセット
 	iFuncIndex = RegisterFunction(s_Token.u.szIdentifier, GetNextCodeIndex());		//関数名をテーブルに登録
 	//その先頭番地は、まず、次のコードの番地GetNextCodeIndex()とする
 	s_Token = GetTokenWithCheck(ProgressAndGetNextToken(), KIND_PARENTHESIS_L);
 	TreatBlockBegin(FIRSTADDR);	//パラメタ名のレベルは関数のブロックと同じ
 	while(1)
 	{
-		if (s_Token.kind != KIND_ID){break;}
+		if (s_Token.m_iKind != KIND_ID){break;}
 		//パラメタ名がある場合
-		setIdKind(parId);		//印字のための情報のセット
+		setIdKind(KIND_parId);		//印字のための情報のセット
 		RegisterParameterName(s_Token.u.szIdentifier);		//パラメタ名をテーブルに登録
 		s_Token = ProgressAndGetNextToken();
 
 
-		if (s_Token.kind != KIND_COMMA)
+		if (s_Token.m_iKind != KIND_COMMA)
 		{		//次がコンマならパラメタ名が続く
-			if (s_Token.kind != KIND_ID){break;}
+			if (s_Token.m_iKind != KIND_ID){break;}
 
 			//次が名前ならコンマを忘れたことに
 			iRet = OutputErrorInsert(KIND_COMMA);
@@ -207,7 +207,7 @@ int funcDecl()			//関数宣言のコンパイル
 	}
 	s_Token = GetTokenWithCheck(s_Token, KIND_PARENTHESIS_R);		//最後は")"のはず
 	TreatParameterEnd();				//パラメタ部が終わったことをテーブルに連絡
-	if (s_Token.kind == KIND_SEMICOLON)
+	if (s_Token.m_iKind == KIND_SEMICOLON)
 	{
 		iRet = OutputErrorDelete();
 		if(iRet < 0){return iRet;}
@@ -223,26 +223,26 @@ int funcDecl()			//関数宣言のコンパイル
 int CompileTheStatement()			//文のコンパイル
 {
 	int tIndex;
-	KindTable k;
+	int iKind;
 	int backP, backP2;				//バックパッチ用
 	int iRet;
 
 	while(1) 
 	{
-		switch (s_Token.kind) 
+		switch (s_Token.m_iKind) 
 		{
 		case KIND_ID:
 			{//代入文のコンパイル
-				tIndex = GetNameIndex(s_Token.u.szIdentifier, varId);	//左辺の変数のインデックス
-				setIdKind(k=GetKind(tIndex));			//印字のための情報のセット
-				if (k != varId && k != parId){iRet = OutputErrorType("var/par"); if(iRet < 0){return iRet;}
+				tIndex = GetNameIndex(s_Token.u.szIdentifier, KIND_varId);	//左辺の変数のインデックス
+				setIdKind(iKind=GetKind(tIndex));			//印字のための情報のセット
+				if (iKind != KIND_varId && iKind != KIND_parId){iRet = OutputErrorType("var/par"); if(iRet < 0){return iRet;}
 				} 		//変数名かパラメタ名のはず
 
 				s_Token = GetTokenWithCheck(ProgressAndGetNextToken(), KIND_ASSIGN);			//":="のはず
 				iRet = CompileTheExpression();
 				if(iRet < 0){return iRet;}
 
-				genCodeT(sto, tIndex);				//左辺への代入命令
+				genCodeT(OPERATION_CODE_STO, tIndex);				//左辺への代入命令
 				return 0;
 			}
 		case KIND_IF:
@@ -250,7 +250,7 @@ int CompileTheStatement()			//文のコンパイル
 				s_Token = ProgressAndGetNextToken();
 				CompileTheCondition();					//条件式のコンパイル
 				s_Token = GetTokenWithCheck(s_Token, KIND_THEN);		//"then"のはず
-				backP = genCodeV(jpc, 0);			//jpc命令
+				backP = genCodeV(OPERATION_CODE_JPC, 0);			//jpc命令
 				iRet = CompileTheStatement();					//文のコンパイル
 				if(iRet < 0){return iRet;}
 				backPatch(backP);				//上のjpc命令にバックパッチ
@@ -274,12 +274,12 @@ int CompileTheStatement()			//文のコンパイル
 					if(iRet < 0){return iRet;}
 					while(1)
 					{
-						if (s_Token.kind == KIND_SEMICOLON)
+						if (s_Token.m_iKind == KIND_SEMICOLON)
 						{		//次が";"なら文が続く
 							s_Token = ProgressAndGetNextToken();
 							break;
 						}
-						if (s_Token.kind == KIND_END)
+						if (s_Token.m_iKind == KIND_END)
 						{			//次がendなら終り
 							s_Token = ProgressAndGetNextToken();
 							return TRUE;
@@ -304,11 +304,11 @@ int CompileTheStatement()			//文のコンパイル
 				backP2 = GetNextCodeIndex();			//while文の最後のjmp命令の飛び先
 				CompileTheCondition();				//条件式のコンパイル
 				s_Token = GetTokenWithCheck(s_Token, KIND_DO);	//"do"のはず
-				backP = genCodeV(jpc, 0);		//条件式が偽のとき飛び出すjpc命令
+				backP = genCodeV(OPERATION_CODE_JPC, 0);		//条件式が偽のとき飛び出すjpc命令
 				iRet = CompileTheStatement();				//文のコンパイル
 				if(iRet < 0){return iRet;}
 
-				genCodeV(jmp, backP2);		//while文の先頭へのジャンプ命令
+				genCodeV(OPERATION_CODE_JMP, backP2);		//while文の先頭へのジャンプ命令
 				backPatch(backP);	//偽のとき飛び出すjpc命令へのバックパッチ
 				return 0;
 			}
@@ -317,13 +317,13 @@ int CompileTheStatement()			//文のコンパイル
 				s_Token = ProgressAndGetNextToken();
 				iRet = CompileTheExpression();
 				if(iRet < 0){return iRet;}
-				genCodeO(wrt);				//その値を出力するwrt命令
+				genCodeO(OPERATOR_WRT);				//その値を出力するwrt命令
 				return 0;
 			}
 		case KIND_WRITE_LINE:
 			{			//writeln文のコンパイル
 				s_Token = ProgressAndGetNextToken();
-				genCodeO(wrl);				//改行を出力するwrl命令
+				genCodeO(OPERATOR_WRL);				//改行を出力するwrl命令
 				return 0;
 			}
 		case KIND_END:			{return 0;}	
@@ -344,7 +344,7 @@ int CompileTheStatement()			//文のコンパイル
 
 BOOL IsStartWithBeginKey(Token t)			//トークンtは文の先頭のキーか？
 {
-	switch (t.kind)
+	switch (t.m_iKind)
 	{
 	case KIND_IF: {return TRUE;}
 	case KIND_BEGIN: {return TRUE;}
@@ -358,18 +358,18 @@ BOOL IsStartWithBeginKey(Token t)			//トークンtは文の先頭のキーか？
 
 int CompileTheExpression()
 {
-	int k;
-	k = s_Token.kind;
-	if (k == KIND_PLUS || k == KIND_MINUS)
+	int iKind;
+	iKind = s_Token.m_iKind;
+	if (iKind == KIND_PLUS || iKind == KIND_MINUS)
 	{
 		s_Token = ProgressAndGetNextToken();
 		int iRet;
 		iRet = CompileTheTerm();
 		if(iRet <0){return iRet;}
 
-		if (k == KIND_MINUS)
+		if (iKind == KIND_MINUS)
 		{
-			genCodeO(neg);
+			genCodeO(OPERATOR_NEG);
 		}
 	}
 	else
@@ -377,35 +377,35 @@ int CompileTheExpression()
 		CompileTheTerm();
 	}
 
-	k = s_Token.kind;
-	while (k == KIND_PLUS || k == KIND_MINUS)
+	iKind = s_Token.m_iKind;
+	while (iKind == KIND_PLUS || iKind == KIND_MINUS)
 	{
 		s_Token = ProgressAndGetNextToken();
 		CompileTheTerm();
-		if (k == KIND_MINUS){genCodeO(sub);}
-		else{genCodeO(add);}
-		k = s_Token.kind;
+		if (iKind == KIND_MINUS){genCodeO(OPERATOR_SUB);}
+		else{genCodeO(OPERATOR_ADD);}
+		iKind = s_Token.m_iKind;
 	}
 	return 0;
 }
 
 int CompileTheTerm()					//式の項のコンパイル
 {
-	int k;
+	int iKind;
 	int iRet;
 	iRet = CompileTheFactor();
 	if(iRet <0){return iRet;}
 
-	k = s_Token.kind;
-	while (k == KIND_MULT || k == KIND_DIV)
+	iKind = s_Token.m_iKind;
+	while (iKind == KIND_MULT || iKind == KIND_DIV)
 	{	
 		s_Token = ProgressAndGetNextToken();
 		iRet = CompileTheFactor();
 		if(iRet <0){return iRet;}
 
-		if (k == KIND_MULT){genCodeO(mul);}
-		else{genCodeO(div_);}
-		k = s_Token.kind;
+		if (iKind == KIND_MULT){genCodeO(OPERATOR_MUL);}
+		else{genCodeO(OPERATOR_DIV);}
+		iKind = s_Token.m_iKind;
 	}
 	return 0;
 }
@@ -413,44 +413,44 @@ int CompileTheTerm()					//式の項のコンパイル
 BOOL CompileTheFactor()					//式の因子のコンパイル
 {
 	int tIndex, i;
-	int k;
+	int iKind;
 	int iRet;
-	if (s_Token.kind == KIND_ID)
+	if (s_Token.m_iKind == KIND_ID)
 	{
-		tIndex = GetNameIndex(s_Token.u.szIdentifier, varId);
-		k=static_cast<int>(GetKind(tIndex));
+		tIndex = GetNameIndex(s_Token.u.szIdentifier, KIND_varId);
+		iKind = GetKind(tIndex);
 		setIdKind(GetKind(tIndex));			//印字のための情報のセット
-		switch (k) 
+		switch (iKind) 
 		{
-		case varId:
+		case KIND_varId:
 			{//変数名かパラメタ名
-				genCodeT(lod, tIndex);
+				genCodeT(OPERATION_CODE_LOD, tIndex);
 				s_Token = ProgressAndGetNextToken(); break;
 			}
-		case parId:	
+		case KIND_parId:	
 			{//変数名かパラメタ名
-				genCodeT(lod, tIndex);
+				genCodeT(OPERATION_CODE_LOD, tIndex);
 				s_Token = ProgressAndGetNextToken(); break;
 			}
-		case constId:		
+		case KIND_constId:		
 			{			//定数名
-				genCodeV(lit, val(tIndex));
+				genCodeV(OPERATION_CODE_LIT, val(tIndex));
 				s_Token = ProgressAndGetNextToken(); break;
 			}
-		case funcId:
+		case KIND_funcId:
 			{//関数呼び出し
 				s_Token = ProgressAndGetNextToken();
-				if (s_Token.kind == KIND_PARENTHESIS_L)
+				if (s_Token.m_iKind == KIND_PARENTHESIS_L)
 				{
 					i=0; 					//iは実引数の個数
 					s_Token = ProgressAndGetNextToken();
-					if (s_Token.kind != KIND_PARENTHESIS_R) 
+					if (s_Token.m_iKind != KIND_PARENTHESIS_R) 
 					{
 						for (; ; ) 
 						{
 							CompileTheExpression(); //実引数のコンパイル
 							i++;	
-							if (s_Token.kind == KIND_COMMA)
+							if (s_Token.m_iKind == KIND_COMMA)
 							{	/* 次がコンマなら実引数が続く */
 								s_Token = ProgressAndGetNextToken();
 								continue;
@@ -475,23 +475,23 @@ BOOL CompileTheFactor()					//式の因子のコンパイル
 					iRet = OutputErrorInsert(KIND_PARENTHESIS_R);
 					if(iRet < 0){return iRet;}
 				}
-				genCodeT(cal, tIndex);				//call命令
+				genCodeT(OPERATION_CODE_CAL, tIndex);				//call命令
 				break;
 			}
 		}
 	}
-	else if (s_Token.kind == KIND_NUM)
+	else if (s_Token.m_iKind == KIND_NUM)
 	{			//定数
-		genCodeV(lit, s_Token.u.value);
+		genCodeV(OPERATION_CODE_LIT, s_Token.u.value);
 		s_Token = ProgressAndGetNextToken();
 	}
-	else if (s_Token.kind == KIND_PARENTHESIS_L)
+	else if (s_Token.m_iKind == KIND_PARENTHESIS_L)
 	{			//「(」「因子」「)」
 		s_Token = ProgressAndGetNextToken();
 		CompileTheExpression();
 		s_Token = GetTokenWithCheck(s_Token, KIND_PARENTHESIS_R);
 	}
-	switch (s_Token.kind)
+	switch (s_Token.m_iKind)
 	{					//因子の後がまた因子ならエラー
 	case KIND_ID: 
 		{
@@ -532,19 +532,19 @@ BOOL CompileTheCondition()					//条件式のコンパイル
 {
 	int iKeyID;
 	int iRet;
-	if (s_Token.kind == KIND_ODD)
+	if (s_Token.m_iKind == KIND_ODD)
 	{
 		s_Token = ProgressAndGetNextToken();
 		iRet = CompileTheExpression();
 		if(iRet < 0){return iRet;}
-		genCodeO(odd);
+		genCodeO(OPERATOR_ODD);
 		return TRUE;
 	}
 
 	iRet = CompileTheExpression();
 	if(iRet < 0){return iRet;}
 
-	iKeyID = s_Token.kind;
+	iKeyID = s_Token.m_iKind;
 	switch(iKeyID)
 	{
 	case KIND_EQUAL: {break;}
@@ -568,12 +568,12 @@ BOOL CompileTheCondition()					//条件式のコンパイル
 
 	switch(iKeyID)
 	{
-	case KIND_EQUAL:	{genCodeO(eq); break;}
-	case KIND_LESS:	{genCodeO(ls); break;}
-	case KIND_GREATER:	{genCodeO(gr); break;}
-	case KIND_NOT_EQUAL:	{genCodeO(neq); break;}
-	case KIND_LESS_EQUAL:	{genCodeO(lseq); break;}
-	case KIND_GREATER_EQUAL:	{genCodeO(greq); break;}
+	case KIND_EQUAL:	{genCodeO(OPERATOR_EQ); break;}
+	case KIND_LESS:	{genCodeO(OPERATOR_LS); break;}
+	case KIND_GREATER:	{genCodeO(OPERATOR_GR); break;}
+	case KIND_NOT_EQUAL:	{genCodeO(OPERATOR_NEQ); break;}
+	case KIND_LESS_EQUAL:	{genCodeO(OPERATOR_LSEQ); break;}
+	case KIND_GREATER_EQUAL:	{genCodeO(OPERATOR_GREQ); break;}
 	}
 	return TRUE;
 }

@@ -13,7 +13,7 @@
 
 typedef struct tableE 
 {		//名前表のエントリーの型
-	KindTable kind;			//名前の種類
+	int iKind;			//名前の種類
 	char name[MAXNAME];	//名前のつづり
 	union 
 	{
@@ -35,14 +35,14 @@ static int s_iValAddress[MAXLEVEL];  	//addr[i]にはブロックレベルiの最後の変数の
 static int s_iLocalValAddress;			//現在のブロックの最後の変数の番地
 static int s_tfIndex;
 
-static char* kindName(KindTable k)		//名前の種類の出力用関数
+static char* kindName(int iKind)		//名前の種類の出力用関数
 {
-	switch (k)
+	switch (iKind)
 	{
-	case varId: {return "var";}
-	case parId: {return "par";}
-	case funcId: {return "func";}
-	case constId: {return "const";}
+	case KIND_varId: {return "var";}
+	case KIND_parId: {return "par";}
+	case KIND_funcId: {return "func";}
+	case KIND_constId: {return "const";}
 	}
 }
 
@@ -99,7 +99,7 @@ void RegisterTheIdentifier(char *szID)			//名前表に名前を登録
 int RegisterFunction(char *szID, int v)		//名前表に関数名と先頭番地を登録
 {
 	RegisterTheIdentifier(szID);
-	s_tableName[s_iNameIndex].kind = funcId;
+	s_tableName[s_iNameIndex].iKind = KIND_funcId;
 	s_tableName[s_iNameIndex].u.f.raddr.level = s_iBlockLevel;
 	s_tableName[s_iNameIndex].u.f.raddr.addr = v; 		 //関数の先頭番地
 	s_tableName[s_iNameIndex].u.f.ParameterNum= 0; 			 //パラメタ数の初期値
@@ -110,7 +110,7 @@ int RegisterFunction(char *szID, int v)		//名前表に関数名と先頭番地を登録
 int RegisterParameterName(char *szID)				//名前表にパラメタ名を登録
 {
 	RegisterTheIdentifier(szID);
-	s_tableName[s_iNameIndex].kind = parId;
+	s_tableName[s_iNameIndex].iKind = KIND_parId;
 	s_tableName[s_iNameIndex].u.raddr.level = s_iBlockLevel;
 	s_tableName[s_tfIndex].u.f.ParameterNum++; 		 //関数のパラメタ数のカウント
 	return s_iNameIndex;
@@ -119,7 +119,7 @@ int RegisterParameterName(char *szID)				//名前表にパラメタ名を登録
 int RegisterVarName(char *szID)			//名前表に変数名を登録
 {
 	RegisterTheIdentifier(szID);
-	s_tableName[s_iNameIndex].kind = varId;
+	s_tableName[s_iNameIndex].iKind = KIND_varId;
 	s_tableName[s_iNameIndex].u.raddr.level = s_iBlockLevel;
 	s_tableName[s_iNameIndex].u.raddr.addr = s_iLocalValAddress;
 	 s_iLocalValAddress++;
@@ -129,7 +129,7 @@ int RegisterVarName(char *szID)			//名前表に変数名を登録
 int RegisterConstName(char *szID, int iVal)		//名前表に定数名とその値を登録
 {
 	RegisterTheIdentifier(szID);
-	s_tableName[s_iNameIndex].kind = constId;
+	s_tableName[s_iNameIndex].iKind = KIND_constId;
 	s_tableName[s_iNameIndex].u.value = iVal;
 	return s_iNameIndex;
 }
@@ -152,7 +152,7 @@ void changeV(int ti, int newVal)		//名前表[ti]の値（関数の先頭番地）の変更
 
 		//名前idの名前表の位置を返す
 	//未宣言の時エラーとする
-int GetNameIndex(char* szID, KindTable k)
+int GetNameIndex(char* szID, int iKind)
 {
 	int i;
 	i = s_iNameIndex;
@@ -166,13 +166,13 @@ int GetNameIndex(char* szID, KindTable k)
 	iRet = OutputErrorType("undef");
 	if(iRet<0){exit(1);}
 
-	if (k == varId) {return RegisterVarName(szID);}	//変数の時は仮登録
+	if (iKind == KIND_varId) {return RegisterVarName(szID);}	//変数の時は仮登録
 	return 0;
 }
 
-KindTable GetKind(int i)				//名前表[i]の種類を返す
+int GetKind(int i)				//名前表[i]の種類を返す
 {
-	return s_tableName[i].kind;
+	return s_tableName[i].iKind;
 }
 
 RelAddr relAddr(int ti)				//名前表[ti]のアドレスを返す

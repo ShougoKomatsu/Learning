@@ -54,7 +54,7 @@
 
 typedef struct token 
 {			/*　トークンの型　*/
-	int kind;				/*　トークンの種類かキーの名前　*/
+	int m_iKind;				/*　トークンの種類かキーの名前　*/
 	union 
 	{
 		char szIdentifier[MAXNAME]; 		/*　Identfierの時、その名前　*/
@@ -63,9 +63,9 @@ typedef struct token
 }Token;
 
 Token ProgressAndGetNextToken();				/*　次のトークンを読んで返す　*/
-Token GetTokenWithCheck(Token t, int k);	/*　t.kind == kのチェック　*/
-	/*　t.kind == kなら、次のトークンを読んで返す　*/
-	/*　t.kind != kならエラーメッセージを出し、tとkが共に記号、または予約語なら　*/
+Token GetTokenWithCheck(Token t, int iKind);	/*　t.m_iKind == kのチェック　*/
+	/*　t.m_iKind == kなら、次のトークンを読んで返す　*/
+	/*　t.m_iKind != kならエラーメッセージを出し、tとkが共に記号、または予約語なら　*/
 	/*　tを捨て、次のトークンを読んで返す（tをkで置き換えたことになる）　*/
 	/*　それ以外の場合、kを挿入したことにして、tを返す　*/
 
@@ -78,7 +78,7 @@ void closeSource();			/*　ソースファイルのclose　*/
 void initSource();			/*　テーブルの初期設定、texファイルの初期設定　*/ 
 void finalSource(); 			/*　ソースの最後のチェック、texファイルの最終設定　*/ 
 int OutputErrorType(char *m);		/*　型エラーを.texファイルに出力　*/
-int OutputErrorInsert(int k);		/*　keyString(k)を.texファイルに挿入　*/
+int OutputErrorInsert(int iKind);		/*　keyString(k)を.texファイルに挿入　*/
 int OutputErrorMissingID();		/*　名前がないとのメッセージを.texファイルに挿入　*/
 int OutputErrorMissingOperator();		/*　演算子がないとのメッセージを.texファイルに挿入　*/
 int OutputErrorDelete();			/*　今読んだトークンを読み捨て（.texファイルに出力）*/
@@ -86,5 +86,5 @@ int OutputErrMessage(char *m);	/*　エラーメッセージを.texファイルに出力　*/
 int OutputErrAndFinish(char *m);			/*　エラーメッセージを出力し、コンパイル終了　*/
 int errorN();				/*　エラーの個数を返す　*/
 
-void setIdKind(KindTable k);   /*　現トークン(Id)の種類をセット（.texファイル出力のため）*/
+void setIdKind(int iKind);   /*　現トークン(Id)の種類をセット（.texファイル出力のため）*/
 
