@@ -87,8 +87,10 @@ int CompileTheBlock(int pIndex)		//pIndex はこのブロックの関数名のインデックス
 	backPatch(intBackPatchNum);			//内部関数を飛び越す命令にパッチ
 	changeV(pIndex, GetNextCodeIndex());	//この関数の開始番地を修正
 	genCodeV(OPERATION_CODE_ICT, frameL());		//このブロックの実行時の必要記憶域をとる命令
+
 	iRet = CompileTheStatement();				//このブロックの主文		
 	if(iRet != TRUE){return iRet;}
+
 	genCodeR();				//リターン命令
 	TreatBlockEnd();				//ブロックが終ったことをtableに連絡
 	return 0;
@@ -234,9 +236,17 @@ int CompileTheStatement()			//文のコンパイル
 		case KIND_ID:
 			{//代入文のコンパイル
 				tIndex = GetNameIndex(s_Token.u.szIdentifier, KIND_varId);	//左辺の変数のインデックス
-				setIdKind(iKind=GetKind(tIndex));			//印字のための情報のセット
-				if (iKind != KIND_varId && iKind != KIND_parId){iRet = OutputErrorType("var/par"); if(iRet < 0){return iRet;}
-				} 		//変数名かパラメタ名のはず
+
+				iKind=GetKind(tIndex);
+				setIdKind(iKind);			//印字のための情報のセット
+
+				if (iKind == KIND_varId ){}
+				else if(iKind == KIND_parId){}
+				else
+				{
+					iRet = OutputErrorType("var/par");
+					if(iRet < 0){return iRet;}
+				} 		
 
 				s_Token = GetTokenWithCheck(ProgressAndGetNextToken(), KIND_ASSIGN);			//":="のはず
 				iRet = CompileTheExpression();
@@ -288,7 +298,6 @@ int CompileTheStatement()			//文のコンパイル
 						{		//次が文の先頭記号なら
 							iRet = OutputErrorInsert(KIND_SEMICOLON);	//";"を忘れたことにする
 							if(iRet < 0){return iRet;}
-
 
 							break;
 						}
@@ -412,7 +421,7 @@ int CompileTheTerm()					//式の項のコンパイル
 
 BOOL CompileTheFactor()					//式の因子のコンパイル
 {
-	int tIndex, i;
+	int tIndex;
 	int iKind;
 	int iRet;
 	if (s_Token.m_iKind == KIND_ID)
@@ -442,6 +451,7 @@ BOOL CompileTheFactor()					//式の因子のコンパイル
 				s_Token = ProgressAndGetNextToken();
 				if (s_Token.m_iKind == KIND_PARENTHESIS_L)
 				{
+					int i;
 					i=0; 					//iは実引数の個数
 					s_Token = ProgressAndGetNextToken();
 					if (s_Token.m_iKind != KIND_PARENTHESIS_R) 
@@ -451,7 +461,7 @@ BOOL CompileTheFactor()					//式の因子のコンパイル
 							CompileTheExpression(); //実引数のコンパイル
 							i++;	
 							if (s_Token.m_iKind == KIND_COMMA)
-							{	/* 次がコンマなら実引数が続く */
+							{	// 次がコンマなら実引数が続く
 								s_Token = ProgressAndGetNextToken();
 								continue;
 							}
