@@ -73,12 +73,12 @@ BOOL CCompilerTestApp::InitInstance()
 	if (nResponse == IDOK)
 	{
 		// TODO: ダイアログが <OK> で消された時のコードを
-		//  記述してください。
+		// 記述してください。
 	}
 	else if (nResponse == IDCANCEL)
 	{
 		// TODO: ダイアログが <キャンセル> で消された時のコードを
-		//  記述してください。
+		// 記述してください。
 	}
 
 	// 上で作成されたシェル マネージャーを削除します。
@@ -88,7 +88,7 @@ BOOL CCompilerTestApp::InitInstance()
 	}
 
 	// ダイアログは閉じられました。アプリケーションのメッセージ ポンプを開始しないで
-	//  アプリケーションを終了するために FALSE を返してください。
+	// アプリケーションを終了するために FALSE を返してください。
 	return FALSE;
 }
 

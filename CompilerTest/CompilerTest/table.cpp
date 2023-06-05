@@ -8,7 +8,7 @@
 #include "getSource.h"
 
 #define MAXTABLE 100		//名前表の最大長さ
-#define MAXNAME  31		//名前の最大長さ
+#define MAXNAME 31		//名前の最大長さ
 #define MAXLEVEL 5		//ブロックの最大深さ
 
 typedef struct tableE 
@@ -21,7 +21,7 @@ typedef struct tableE
 		struct 
 		{
 			RelAddr raddr;	//関数の場合：先頭アドレス
-			int pars;		//関数の場合：パラメタ数
+			int ParameterNum;		//関数の場合：パラメタ数
 		}f;
 		RelAddr raddr;		//変数、パラメタの場合：アドレス
 	}u;
@@ -30,8 +30,8 @@ typedef struct tableE
 static TabelE s_tableName[MAXTABLE];		//名前表
 static int s_iNameIndex = 0;			//名前表のインデックス
 static int s_iBlockLevel = -1;			//現在のブロックレベル
-static int s_iBlockindex[MAXLEVEL];   	//index[i]にはブロックレベルiの最後のインデックス
-static int s_iValAddress[MAXLEVEL];    	//addr[i]にはブロックレベルiの最後の変数の番地
+static int s_iBlockindex[MAXLEVEL];  	//index[i]にはブロックレベルiの最後のインデックス
+static int s_iValAddress[MAXLEVEL];  	//addr[i]にはブロックレベルiの最後の変数の番地
 static int s_iLocalValAddress;			//現在のブロックの最後の変数の番地
 static int s_tfIndex;
 
@@ -46,7 +46,7 @@ static char* kindName(KindTable k)		//名前の種類の出力用関数
 	}
 }
 
-void blockBegin(int firstAddr)	//ブロックの始まり(最初の変数の番地)で呼ばれる
+void TreatBlockBegin(int firstAddr)	//ブロックの始まり(最初の変数の番地)で呼ばれる
 {
 	if (s_iBlockLevel == -1)
 	{			//主ブロックの時、初期設定
@@ -66,60 +66,59 @@ void blockBegin(int firstAddr)	//ブロックの始まり(最初の変数の番地)で呼ばれる
 	return;
 }
 
-void blockEnd()				//ブロックの終りで呼ばれる
+void TreatBlockEnd()				//ブロックの終りで呼ばれる
 {
 	s_iBlockLevel--;
 	s_iNameIndex = s_iBlockindex[s_iBlockLevel];		//一つ外側のブロックの情報を回復
 	s_iLocalValAddress = s_iValAddress[s_iBlockLevel];
 }
 
-int bLevel()				//現ブロックのレベルを返す
+int iGetBlockLevel()				//現ブロックのレベルを返す
 {
 	return s_iBlockLevel;
 }
 
-int fPars()					//現ブロックの関数のパラメタ数を返す
+int GetFunctionParameterNum()					//現ブロックの関数のパラメタ数を返す
 {
-	return s_tableName[s_iBlockindex[s_iBlockLevel-1]].u.f.pars;
+	return s_tableName[s_iBlockindex[s_iBlockLevel-1]].u.f.ParameterNum;
 }
 
-void enterT(char *id)			//名前表に名前を登録
+void RegisterTheIdentifier(char *szID)			//名前表に名前を登録
 {
-	if (s_iNameIndex < MAXTABLE)
-	{
-		s_iNameIndex++;
-		strcpy(s_tableName[s_iNameIndex].name, id);
-	}
-	else 
+	if (s_iNameIndex < MAXTABLE) 
 	{
 		s_iNameIndex++;
 		OutputErrAndFinish("too many names");
+		return;
 	}
+
+	s_iNameIndex++;
+	strcpy(s_tableName[s_iNameIndex].name, szID);
 }
 
-int enterTfunc(char *id, int v)		//名前表に関数名と先頭番地を登録
+int RegisterFunction(char *szID, int v)		//名前表に関数名と先頭番地を登録
 {
-	enterT(id);
+	RegisterTheIdentifier(szID);
 	s_tableName[s_iNameIndex].kind = funcId;
 	s_tableName[s_iNameIndex].u.f.raddr.level = s_iBlockLevel;
-	s_tableName[s_iNameIndex].u.f.raddr.addr = v;  		 //関数の先頭番地
-	s_tableName[s_iNameIndex].u.f.pars = 0;  			 //パラメタ数の初期値
+	s_tableName[s_iNameIndex].u.f.raddr.addr = v; 		 //関数の先頭番地
+	s_tableName[s_iNameIndex].u.f.ParameterNum= 0; 			 //パラメタ数の初期値
 	s_tfIndex = s_iNameIndex;
 	return s_iNameIndex;
 }
 
-int enterTpar(char *id)				//名前表にパラメタ名を登録
+int RegisterParameterName(char *szID)				//名前表にパラメタ名を登録
 {
-	enterT(id);
+	RegisterTheIdentifier(szID);
 	s_tableName[s_iNameIndex].kind = parId;
 	s_tableName[s_iNameIndex].u.raddr.level = s_iBlockLevel;
-	s_tableName[s_tfIndex].u.f.pars++;  		 //関数のパラメタ数のカウント
+	s_tableName[s_tfIndex].u.f.ParameterNum++; 		 //関数のパラメタ数のカウント
 	return s_iNameIndex;
 }
 
-int enterTvar(char *id)			//名前表に変数名を登録
+int RegisterVarName(char *szID)			//名前表に変数名を登録
 {
-	enterT(id);
+	RegisterTheIdentifier(szID);
 	s_tableName[s_iNameIndex].kind = varId;
 	s_tableName[s_iNameIndex].u.raddr.level = s_iBlockLevel;
 	s_tableName[s_iNameIndex].u.raddr.addr = s_iLocalValAddress;
@@ -127,22 +126,22 @@ int enterTvar(char *id)			//名前表に変数名を登録
 	return s_iNameIndex;
 }
 
-int enterTconst(char *id, int v)		//名前表に定数名とその値を登録
+int RegisterConstName(char *szID, int iVal)		//名前表に定数名とその値を登録
 {
-	enterT(id);
+	RegisterTheIdentifier(szID);
 	s_tableName[s_iNameIndex].kind = constId;
-	s_tableName[s_iNameIndex].u.value = v;
+	s_tableName[s_iNameIndex].u.value = iVal;
 	return s_iNameIndex;
 }
 
-void endpar()					//パラメタ宣言部の最後で呼ばれる
+void TreatParameterEnd()					//パラメタ宣言部の最後で呼ばれる
 {
-	int i;
-	int pars = s_tableName[s_tfIndex].u.f.pars;
-	if (pars == 0)  {return;}
-	for (i=1; i<=pars; i++)	
+	int iParameterNum = s_tableName[s_tfIndex].u.f.ParameterNum;
+	if (iParameterNum == 0) {return;}
+
+	for (int i=1; i<=iParameterNum; i++)	
 	{		//各パラメタの番地を求める
-		s_tableName[s_tfIndex+i].u.raddr.addr = i-1-pars;
+		s_tableName[s_tfIndex+i].u.raddr.addr = i-1-iParameterNum;
 	}
 }
 
@@ -151,22 +150,23 @@ void changeV(int ti, int newVal)		//名前表[ti]の値（関数の先頭番地）の変更
 	s_tableName[ti].u.f.raddr.addr = newVal;
 }
 
-int searchT(char *id, KindTable k)		//名前idの名前表の位置を返す
+		//名前idの名前表の位置を返す
 	//未宣言の時エラーとする
+int GetNameIndex(char* szID, KindTable k)
 {
 	int i;
 	i = s_iNameIndex;
-	strcpy(s_tableName[0].name, id);			//番兵をたてる
-	while( strcmp(id, s_tableName[i].name) ){i--;}
+	strcpy(s_tableName[0].name, szID);			//番兵をたてる
+	while( strcmp(szID, s_tableName[i].name) != 0 ){i--;}
 
-	if ( i ){return i;}//名前があった
-		
+	if ( i>0 ){return i;}//名前があった
+
 	//名前がなかった
-	BOOL bRet;
-	bRet = OutputErrorType("undef");
-	if(bRet!=TRUE){return FALSE;}
+	int iRet;
+	iRet = OutputErrorType("undef");
+	if(iRet<0){exit(1);}
 
-		if (k==varId) {return enterTvar(id);}	//変数の時は仮登録
+	if (k == varId) {return RegisterVarName(szID);}	//変数の時は仮登録
 	return 0;
 }
 
@@ -185,9 +185,9 @@ int val(int ti)					//名前表[ti]のvalueを返す
 	return s_tableName[ti].u.value;
 }
 
-int pars(int ti)				//名前表[ti]の関数のパラメタ数を返す
+int GetParameterNum(int ti)				//名前表[ti]の関数のパラメタ数を返す
 {
-	return s_tableName[ti].u.f.pars;
+	return s_tableName[ti].u.f.ParameterNum;
 }
 
 int frameL()				//そのブロックで実行時に必要とするメモリー容量

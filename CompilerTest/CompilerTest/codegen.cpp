@@ -1,5 +1,5 @@
 #include "stdafx.h"
-   /*****************codegen.c******************/
+  /*****************codegen.c******************/
 
 #include <stdio.h>
 #include "codegen.h"
@@ -16,7 +16,7 @@
 
 typedef struct inst
 {				//命令語の型
-	OpCode  opCode;
+	OperationCode opCode;
 	union
 	{
 		RelAddr addr;
@@ -27,15 +27,15 @@ typedef struct inst
 
 static Inst s_instCode[MAXCODE];		//目的コードが入る
 static int s_iCodeIndex = -1;				//最後に生成した命令語のインデックス
-static void IncrimentCodeIndex();	     		 //目的コードのインデックスの増加とチェック
+static void IncrimentCodeIndex();	   		 //目的コードのインデックスの増加とチェック
 static void printCode(int i);		//命令語の印字
 
-int nextCode()					//次の命令語のアドレスを返す
+int GetNextCodeIndex()					//次の命令語のアドレスを返す
 {
 	return s_iCodeIndex +1;
 }
 
-int genCodeV(OpCode op, int v)		//命令語の生成、アドレス部にv
+int genCodeV(OperationCode op, int v)		//命令語の生成、アドレス部にv
 {
 	IncrimentCodeIndex();
 	s_instCode[s_iCodeIndex].opCode = op;
@@ -43,7 +43,7 @@ int genCodeV(OpCode op, int v)		//命令語の生成、アドレス部にv
 	return s_iCodeIndex;
 }
 
-int genCodeT(OpCode op, int ti)		//命令語の生成、アドレスは名前表から
+int genCodeT(OperationCode op, int ti)		//命令語の生成、アドレスは名前表から
 {
 	IncrimentCodeIndex();
 	s_instCode[s_iCodeIndex].opCode = op;
@@ -65,8 +65,8 @@ int genCodeR()					//ret命令語の生成
 
 	IncrimentCodeIndex();
 	s_instCode[s_iCodeIndex].opCode = ret;
-	s_instCode[s_iCodeIndex].u.addr.level = bLevel();
-	s_instCode[s_iCodeIndex].u.addr.addr = fPars();	//パラメタ数（実行スタックの解放用）*/
+	s_instCode[s_iCodeIndex].u.addr.level = iGetBlockLevel();
+	s_instCode[s_iCodeIndex].u.addr.addr = GetFunctionParameterNum();	//パラメタ数（実行スタックの解放用）*/
 	return s_iCodeIndex;
 }
 
@@ -153,8 +153,8 @@ void execute()			//目的コード（命令語）の実行
 	int pc, top, lev, temp;
 	Inst i;					//実行する命令語
 	printf("start execution\n");
-	top = 0;  pc = 0;			//top:次にスタックに入れる場所、pc:命令語のカウンタ
-	stack[0] = 0;  stack[1] = 0; 	//stack[top]はcalleeで壊すディスプレイの退避場所
+	top = 0; pc = 0;			//top:次にスタックに入れる場所、pc:命令語のカウンタ
+	stack[0] = 0; stack[1] = 0; 	//stack[top]はcalleeで壊すディスプレイの退避場所
 	//stack[top+1]はcallerへの戻り番地
 	display[0] = 0;			//主ブロックの先頭番地は 0
 	do 
@@ -195,7 +195,7 @@ void execute()			//目的コード（命令語）の実行
 			{
 				top--;
 				temp = stack[top];		//スタックのトップにあるものが返す値
-				top = display[i.u.addr.level];  	//topを呼ばれたときの値に戻す
+				top = display[i.u.addr.level]; 	//topを呼ばれたときの値に戻す
 				display[i.u.addr.level] = stack[top];		/* 壊したディスプレイの回復 */
 				pc = stack[top+1];
 				top -= i.u.addr.addr;		//実引数の分だけトップを戻す
@@ -224,17 +224,17 @@ void execute()			//目的コード（命令語）の実行
 			switch(i.u.optr)
 			{
 			case neg:{ stack[top-1] = -stack[top-1]; continue;}
-			case add:{ top--;  stack[top-1] += stack[top]; continue;}
+			case add:{ top--; stack[top-1] += stack[top]; continue;}
 			case sub:{ top--; stack[top-1] -= stack[top]; continue;}
-			case mul:{ top--;  stack[top-1] *= stack[top];  continue;}
-			case div_:{ --top;  stack[top-1] /= stack[top]; continue;}
+			case mul:{ top--; stack[top-1] *= stack[top]; continue;}
+			case div_:{ --top; stack[top-1] /= stack[top]; continue;}
 			case odd:{ stack[top-1] = stack[top-1] & 1; continue;}
-			case eq:{ top--;  stack[top-1] = (stack[top-1] == stack[top]); continue;}
-			case ls:{ top--;  stack[top-1] = (stack[top-1] < stack[top]); continue;}
-			case gr:{ top--;  stack[top-1] = (stack[top-1] > stack[top]); continue;}
-			case neq:{ top--;  stack[top-1] = (stack[top-1] != stack[top]); continue;}
-			case lseq:{ top--;  stack[top-1] = (stack[top-1] <= stack[top]); continue;}
-			case greq:{ top--;  stack[top-1] = (stack[top-1] >= stack[top]); continue;}
+			case eq:{ top--; stack[top-1] = (stack[top-1] == stack[top]); continue;}
+			case ls:{ top--; stack[top-1] = (stack[top-1] < stack[top]); continue;}
+			case gr:{ top--; stack[top-1] = (stack[top-1] > stack[top]); continue;}
+			case neq:{ top--; stack[top-1] = (stack[top-1] != stack[top]); continue;}
+			case lseq:{ top--; stack[top-1] = (stack[top-1] <= stack[top]); continue;}
+			case greq:{ top--; stack[top-1] = (stack[top-1] >= stack[top]); continue;}
 			case wrt:{ top--; printf("%d ", stack[top]); continue;}
 			case wrl:{ printf("\n"); continue;}
 			}

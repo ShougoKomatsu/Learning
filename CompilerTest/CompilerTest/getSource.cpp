@@ -7,11 +7,11 @@
 
 #define MAXLINE 120		//１行の最大文字数
 #define MAXERROR 30		//これ以上のエラーがあったら終り
-#define MAXNUM  14		//定数の最大桁数
-#define TAB   5				//タブのスペース
-#define INSERT_C  "#0000FF"  /* 挿入文字の色 */
-#define DELETE_C  "#FF0000"  /* 削除文字の色 */
-#define TYPE_C  "#00FF00"  /* タイプエラー文字の色 */
+#define MAXNUM 14		//定数の最大桁数
+#define TAB  5				//タブのスペース
+#define INSERT_C "#0000FF" /* 挿入文字の色 */
+#define DELETE_C "#FF0000" /* 削除文字の色 */
+#define TYPE_C "#00FF00" /* タイプエラー文字の色 */
 
 static FILE *s_fpi;				//ソースファイル
 static FILE *s_fptex;			//LaTeX出力ファイル
@@ -26,86 +26,86 @@ static int s_iCRNum;				//その前のCRの個数
 static int s_iTokenHasBeenPrinted;			//トークンは印字済みか
 
 static int s_iErrorCount = 0;			//出力したエラーの数
-static char GetNextChar();		//次の文字を読む関数
-static int isKeySym(KeyId k);	//tは記号か？
-static int isKeyWd(KeyId k);		//tは予約語か？
+static char GetNextCharAndProgress();		//次の文字を読む関数
+static int isKeySymbole(int k);	//tは記号か？
+static int isKeyWord(int k);		//tは予約語か？
 static void printSpaces();		//トークンの前のスペースの印字
 static void printcToken();		//トークンの印字
 
 struct keyWd 
-{				//予約語や記号と名前(KeyId)
+{				//予約語や記号と名前(int)
 	char *word;
-	KeyId keyId;
+	int iKeyID;
 };
 
 static struct keyWd KeywordTable[] = 
-{	//予約語や記号と名前(KeyId)の表
-	{"begin", Begin},
-	{"end", End},
-	{"if", If},
-	{"then", Then},
-	{"while", While},
-	{"do", Do},
-	{"return", Ret},
-	{"function", Func},
-	{"var", Var},
-	{"const", Const},
-	{"odd", Odd},
-	{"write", Write},
-	{"writeln",WriteLn},
-	{"$dummy1",end_of_KeyWd},
-	//記号と名前(KeyId)の表
-	{"+", Plus},
-	{"-", Minus},
-	{"*", Mult},
-	{"/", Div},
-	{"(", Lparen},
-	{")", Rparen},
-	{"=", Equal},
-	{"<", Lss},
-	{">", Gtr},
-	{"<>", NotEq},
-	{"<=", LssEq},
-	{">=", GtrEq},
-	{",", Comma},
-	{".", Period},
-	{";", Semicolon},
-	{":=", Assign},
-	{"$dummy2",end_of_KeySym}
+{	//予約語や記号と名前(int)の表
+	{"begin", KIND_BEGIN},
+	{"end", KIND_END},
+	{"if", KIND_IF},
+	{"then", KIND_THEN},
+	{"while", KIND_WHILE},
+	{"do", KIND_DO},
+	{"return", KIND_RET},
+	{"function", KIND_FUNC},
+	{"var", KIND_VAR},
+	{"const", KIND_CONST},
+	{"odd", KIND_ODD},
+	{"write", KIND_WRITE},
+	{"writeln",KIND_WRITE_LINE},
+	{"$dummy1",KIND_END_OF_KEYWORD},
+	//記号と名前(int)の表
+	{"+", KIND_PLUS},
+	{"-", KIND_MINUS},
+	{"*", KIND_MULT},
+	{"/", KIND_DIV},
+	{"(", KIND_PARENTHESIS_L},
+	{")", KIND_PARENTHESIS_R},
+	{"=", KIND_EQUAL},
+	{"<", KIND_LESS},
+	{">", KIND_GREATER},
+	{"<>", KIND_NOT_EQUAL},
+	{"<=", KIND_LESS_EQUAL},
+	{">=", KIND_GREATER_EQUAL},
+	{",", KIND_COMMA},
+	{".", KIND_PERIOD},
+	{";", KIND_SEMICOLON},
+	{":=", KIND_ASSIGN},
+	{"$dummy2",KIND_END_OF_SYMBOLE}
 };
 
-int isKeyWd(KeyId k)			//キーkは予約語か？
+int isKeyWord(int k)			//キーkは予約語か？
 {
-	return (k < end_of_KeyWd);
+	return (k < KIND_END_OF_KEYWORD);
 }
 
-int isKeySym(KeyId k)		//キーkは記号か？
+int isKeySymbole(int k)		//キーkは記号か？
 {
-	if (k < end_of_KeyWd){return 0;}
-	return (k < end_of_KeySym);
+	if (k < KIND_END_OF_KEYWORD){return 0;}
+	return (k < KIND_END_OF_SYMBOLE);
 }
 
-static KeyId s_ClassTable[256];		//文字の種類を示す表にする
+static int s_ClassTable[256];		//文字の種類を示す表にする
 
 static void CreateClassTable()
 {
-	for (int i=0; i<256; i++){s_ClassTable[i] = others;}
-	for (int i='0'; i<='9'; i++){s_ClassTable[i] = digit;}
-	for (int i='A'; i<='Z'; i++){s_ClassTable[i] = letter;}
-	for (int i='a'; i<='z'; i++){s_ClassTable[i] = letter;}
-	s_ClassTable['+'] = Plus; 
-	s_ClassTable['-'] = Minus;
-	s_ClassTable['*'] = Mult; 
-	s_ClassTable['/'] = Div;
-	s_ClassTable['('] = Lparen; 
-	s_ClassTable[')'] = Rparen;
-	s_ClassTable['='] = Equal; 
-	s_ClassTable['<'] = Lss;
-	s_ClassTable['>'] = Gtr; 
-	s_ClassTable[','] = Comma;
-	s_ClassTable['.'] = Period; 
-	s_ClassTable[';'] = Semicolon;
-	s_ClassTable[':'] = colon;
+	for (int i=0; i<256; i++){s_ClassTable[i] = KIND_OTHERS;}
+	for (int i='0'; i<='9'; i++){s_ClassTable[i] = KIND_DIGIT;}
+	for (int i='A'; i<='Z'; i++){s_ClassTable[i] = KIND_LETTER;}
+	for (int i='a'; i<='z'; i++){s_ClassTable[i] = KIND_LETTER;}
+	s_ClassTable['+'] = KIND_PLUS; 
+	s_ClassTable['-'] = KIND_MINUS;
+	s_ClassTable['*'] = KIND_MULT; 
+	s_ClassTable['/'] = KIND_DIV;
+	s_ClassTable['('] = KIND_PARENTHESIS_L; 
+	s_ClassTable[')'] = KIND_PARENTHESIS_R;
+	s_ClassTable['='] = KIND_EQUAL; 
+	s_ClassTable['<'] = KIND_LESS;
+	s_ClassTable['>'] = KIND_GREATER; 
+	s_ClassTable[','] = KIND_COMMA;
+	s_ClassTable['.'] = KIND_PERIOD; 
+	s_ClassTable[';'] = KIND_SEMICOLON;
+	s_ClassTable[':'] = KIND_COLON;
 }
 
 BOOL openSource(char fileName[]) 		//ソースファイルのopen
@@ -115,7 +115,7 @@ BOOL openSource(char fileName[]) 		//ソースファイルのopen
 	if ( s_fpi == NULL ) {printf("can't open %s\n", fileName);return FALSE;}
 
 	strcpy(fileNameO, fileName);
-	strcat(fileNameO,".html");  // strcat(fileNameO,".tex");
+	strcat(fileNameO,".html"); // strcat(fileNameO,".tex");
 
 	s_fptex = fopen(fileNameO,"w");
 	if ( s_fptex  == NULL ) {printf("can't open %s\n", fileNameO);return FALSE;} 
@@ -134,7 +134,7 @@ void initSource()
 	s_cLast= '\n';
 	s_iTokenHasBeenPrinted = 1;
 	CreateClassTable();
-	fprintf(s_fptex,"<HTML>\n");   //htmlコマンド
+	fprintf(s_fptex,"<HTML>\n");  //htmlコマンド
 	fprintf(s_fptex,"<HEAD>\n<TITLE>compiled source program</TITLE>\n</HEAD>\n");
 	fprintf(s_fptex,"<BODY>\n<PRE>\n");
 
@@ -142,8 +142,8 @@ void initSource()
 
 void finalSource()
 {
-	if (s_tokenLast.kind==Period){printcToken();}
-	else{BOOL bRet; bRet = OutputErrorInsert(Period);if(bRet != TRUE){exit(1);}}
+	if (s_tokenLast.kind == KIND_PERIOD){printcToken();}
+	else{BOOL bRet; bRet = OutputErrorInsert(KIND_PERIOD);if(bRet != TRUE){exit(1);}}
 	fprintf(s_fptex,"\n</PRE>\n</BODY>\n</HTML>\n");
 	// 	fprintf(s_fptex,"\n\\end{document}\n");
 }
@@ -174,10 +174,10 @@ BOOL OutputErrorType(char *m)		//型エラーを.html（または.tex）ファイルに出力
 	return IncrementErrorCount();
 }
 
-BOOL OutputErrorInsert(KeyId k)		//keyString(k)を.html（または.tex）ファイルに挿入
+BOOL OutputErrorInsert(int k)		//keyString(k)を.html（または.tex）ファイルに挿入
 {
 	fprintf(s_fptex, "<FONT COLOR=%s><b>%s</b></FONT>", INSERT_C, KeywordTable[k].word);
-	// 	if (k < end_of_KeyWd) 	//予約語
+	// 	if (k < KIND_END_OF_KEYWORD) 	//予約語
 	//		 fprintf(s_fptex, "\\ \\insert{{\\bf %s}}", KeywordTable[k].word); 
 	//	else 					//演算子か区切り記号
 	//	fprintf(s_fptex, "\\ \\insert{$%s$}", KeywordTable[k].word);
@@ -203,24 +203,24 @@ int OutputErrorDelete()			//今読んだトークンを読み捨てる
 	int i=(int)s_tokenLast.kind;
 	printSpaces();
 	s_iTokenHasBeenPrinted = 1;
-	if (i < end_of_KeyWd){fprintf(s_fptex, "<FONT COLOR=%s><b>%s</b></FONT>", DELETE_C, KeywordTable[i].word);} 							//予約語
-	else if (i < end_of_KeySym){fprintf(s_fptex, "<FONT COLOR=%s>%s</FONT>", DELETE_C, KeywordTable[i].word);}					//演算子か区切り記号
-	else if (i==(int)Id){fprintf(s_fptex, "<FONT COLOR=%s>%s</FONT>", DELETE_C, s_tokenLast.u.id);}								//Identfier
-	else if (i==(int)Num){fprintf(s_fptex, "<FONT COLOR=%s>%d</FONT>", DELETE_C, s_tokenLast.u.value);}								//Num
+	if (i < KIND_END_OF_KEYWORD){fprintf(s_fptex, "<FONT COLOR=%s><b>%s</b></FONT>", DELETE_C, KeywordTable[i].word);} 							//予約語
+	else if (i < KIND_END_OF_SYMBOLE){fprintf(s_fptex, "<FONT COLOR=%s>%s</FONT>", DELETE_C, KeywordTable[i].word);}					//演算子か区切り記号
+	else if (i == KIND_ID){fprintf(s_fptex, "<FONT COLOR=%s>%s</FONT>", DELETE_C, s_tokenLast.u.szIdentifier);}								//Identfier
+	else if (i == KIND_NUM){fprintf(s_fptex, "<FONT COLOR=%s>%d</FONT>", DELETE_C, s_tokenLast.u.value);}								//Num
 	return ERR_OUTPUT_NORMAL;
 }
 
-int OutputErrMessage(char *m)	//エラーメッセージを.html（または.tex）ファイルに出力
+int OutputErrMessage(char *szMessage)	//エラーメッセージを.html（または.tex）ファイルに出力
 {
-	fprintf(s_fptex, "<FONT COLOR=%s>%s</FONT>", TYPE_C, m);
+	fprintf(s_fptex, "<FONT COLOR=%s>%s</FONT>", TYPE_C, szMessage);
 	//fprintf(s_fptex, "$^{%s}$", m);
 	return IncrementErrorCount();
 }
 
-int OutputErrAndFinish(char *m)			//エラーメッセージを出力し、コンパイル終了
+int OutputErrAndFinish(char *szMessage)			//エラーメッセージを出力し、コンパイル終了
 {
 	int iRet;
-	iRet = OutputErrMessage(m);
+	iRet = OutputErrMessage(szMessage);
 	if(iRet <0){return ERR_OUTPUT_COUNT_MAX;}
 
 	fprintf(s_fptex, "fatal errors\n</PRE>\n</BODY>\n</HTML>\n");
@@ -235,20 +235,19 @@ int errorN()				//エラーの個数を返す
 	return s_iErrorCount;
 }
 
-char GetNextChar()				//次の１文字を返す関数
+char GetNextCharAndProgress()				//次の１文字を返す関数
 {
 	char ch;
 	if (s_iLineIndex == -1)
 	{
 		if (fgets(s_szLine, MAXLINE, s_fpi) != NULL)
 		{
-
 			//			puts(line); 	//通常のエラーメッセージの出力の場合（参考まで）
 			s_iLineIndex = 0;
 		} 
 		else 
 		{
-			OutputErrAndFinish("end of file\n");      // end of fileならコンパイル終了
+			OutputErrAndFinish("end of file\n");   // end of fileならコンパイル終了
 		}
 	}
 
@@ -263,9 +262,8 @@ char GetNextChar()				//次の１文字を返す関数
 
 Token ProgressAndGetNextToken()			//次のトークンを読んで返す関数
 {
-	int i = 0;
 	int num;
-	KeyId cc;
+	int cc;
 	Token temp;
 	char ident[MAXNAME];
 	printcToken(); 			//前のトークンを印字
@@ -273,123 +271,138 @@ Token ProgressAndGetNextToken()			//次のトークンを読んで返す関数
 	s_iCRNum = 0;
 	while (1)
 	{				//次のトークンまでの空白や改行をカウント
-		if (s_cLast== ' ')
+		if (s_cLast == ' ')
 		{
 			s_iSpaceNum++;
 		}
-		else if	(s_cLast== '\t')
+		else if	(s_cLast == '\t')
 		{
 			s_iSpaceNum+=TAB;
 		}
-		else if (s_cLast== '\n')
+		else if (s_cLast == '\n')
 		{
 			s_iSpaceNum = 0; 
 			s_iCRNum++;
 		}
 		else {break;}
-		s_cLast= GetNextChar();
+		s_cLast= GetNextCharAndProgress();
 	}
+
 	switch (cc = s_ClassTable[s_cLast]) 
 	{
-	case letter:
+	case KIND_LETTER:
 		{//identifier
-			do 
+			ident[0] = s_cLast;
+			s_cLast= GetNextCharAndProgress();
+			int i = 1;
+			while(1);
 			{
+				if(s_ClassTable[s_cLast] == KIND_LETTER){break;}	
+				if(s_ClassTable[s_cLast] == KIND_DIGIT) {break;}
+
 				if (i < MAXNAME){ident[i] = s_cLast;}
 				i++; 
-				s_cLast= GetNextChar();
-			} while (  s_ClassTable[s_cLast] == letter	|| s_ClassTable[s_cLast] == digit );
-
+				s_cLast= GetNextCharAndProgress();
+			} 
 
 			if (i >= MAXNAME)
 			{
 				BOOL bRet;
 				bRet = OutputErrMessage("too long");
-					if(bRet != TRUE){exit (1);}
+				if(bRet != TRUE){exit (1);}
 
 				i = MAXNAME - 1;
 			}	
 			ident[i] = '\0'; 
-			for (i=0; i<end_of_KeyWd; i++)
+			for (i=0; i<KIND_END_OF_KEYWORD; i++)
 			{
 				if (strcmp(ident, KeywordTable[i].word) == 0) 
 				{
-					temp.kind = KeywordTable[i].keyId;  		//予約語の場合
+					temp.kind = KeywordTable[i].iKeyID; 		//予約語の場合
 					s_tokenLast = temp; 
 					s_iTokenHasBeenPrinted = 0;
 					return temp;
 				}
 			}
-			temp.kind = Id;		//ユーザの宣言した名前の場合
-			strcpy(temp.u.id, ident);
+			temp.kind = KIND_ID;		//ユーザの宣言した名前の場合
+			strcpy(temp.u.szIdentifier, ident);
 			break;
 		}
-	case digit:
+	case KIND_DIGIT:
 		{//number
 			num = 0;
-			do 
+
+			num = s_cLast-'0';
+			s_cLast= GetNextCharAndProgress();
+
+			int i = 1;
+			while(1) 
 			{
 				num = 10*num+(s_cLast-'0');
 				i++; 
-				s_cLast= GetNextChar();
-			} while (s_ClassTable[s_cLast] == digit);
+				s_cLast= GetNextCharAndProgress();
+				if(s_ClassTable[s_cLast] != KIND_DIGIT){break;}
+			} 
 
 			if (i>MAXNUM)
 			{
 				BOOL bRet;
 				bRet = OutputErrMessage("too large");
-					if(bRet != TRUE){exit (1);}
+				if(bRet != TRUE){exit (1);}
 			}
-			temp.kind = Num;
+			temp.kind = KIND_NUM;
 			temp.u.value = num;
 			break;
 		}
-	case colon:
+	case KIND_COLON:
 		{
-			if ((s_cLast= GetNextChar()) == '=') 
+			s_cLast= GetNextCharAndProgress();
+			if (s_cLast == '=') 
 			{
-				s_cLast= GetNextChar();
-				temp.kind = Assign;		//":="
+				s_cLast= GetNextCharAndProgress();
+				temp.kind = KIND_ASSIGN;		//":="
 				break;
 			} 
 
-			temp.kind = nul;
+			temp.kind = KIND_NUL;
 			break;
 		}
-	case Lss:
+	case KIND_LESS:
 		{
-			if ((s_cLast= GetNextChar()) == '=') 
+			s_cLast= GetNextCharAndProgress();
+			if (s_cLast == '=') 
 			{
-				s_cLast= GetNextChar();
-				temp.kind = LssEq;		//"<="
+				s_cLast= GetNextCharAndProgress();
+				temp.kind = KIND_LESS_EQUAL;		//"<="
 				break;
 			} 
 
-			if (s_cLast== '>') 
+			if (s_cLast == '>') 
 			{
-				s_cLast= GetNextChar();
-				temp.kind = NotEq;		//"<>"
+				s_cLast= GetNextCharAndProgress();
+				temp.kind = KIND_NOT_EQUAL;		//"<>"
 				break;
 			} 
 
-			temp.kind = Lss;
+			temp.kind = KIND_LESS;
 			break;
 		}
-	case Gtr:
+	case KIND_GREATER:
 		{
-			if ((s_cLast= GetNextChar()) == '=') 
+			s_cLast= GetNextCharAndProgress();
+			if (s_cLast == '=') 
 			{
-				s_cLast= GetNextChar();
-				temp.kind = GtrEq;		//">="
+				s_cLast= GetNextCharAndProgress();
+				temp.kind = KIND_GREATER_EQUAL;		//">="
 				break;
 			} 
-			temp.kind = Gtr;
+			temp.kind = KIND_GREATER;
 			break;
 		}
 	default:
 		{
 			temp.kind = cc;
-			s_cLast= GetNextChar(); 
+			s_cLast= GetNextCharAndProgress(); 
 			break;
 		}
 	}
@@ -398,37 +411,38 @@ Token ProgressAndGetNextToken()			//次のトークンを読んで返す関数
 	return temp;
 }
 
-Token checkGet(Token t, KeyId k)			//t.kind == k のチェック
+Token GetTokenWithCheck(Token token, int iKeyID)			//t.kind == k のチェック
 	//t.kind == k なら、次のトークンを読んで返す
 	//t.kind != k ならエラーメッセージを出し、t と k が共に記号、または予約語なら
 	//t を捨て、次のトークンを読んで返す（ t を k で置き換えたことになる）
 	//それ以外の場合、k を挿入したことにして、t を返す
 {
 	int iRet;
-	if (t.kind==k){return ProgressAndGetNextToken();}
+	if (token.kind == iKeyID){return ProgressAndGetNextToken();}
 
-	if ((isKeyWd(k) && isKeyWd(t.kind)) )
+
+	if (((isKeyWord(iKeyID) == TRUE) && (isKeyWord(token.kind)) == TRUE) )
 	{
 		iRet = OutputErrorDelete();
-		if(iRet != TRUE){exit(1);}
-		iRet = OutputErrorInsert(k);
-		if(iRet != TRUE){exit(1);}
+		if(iRet < 0){exit(1);}
+		iRet = OutputErrorInsert(iKeyID);
+		if(iRet < 0){exit(1);}
 		return ProgressAndGetNextToken();
 	}
 
-	if ((isKeySym(k) && isKeySym(t.kind)))
+	if (((isKeySymbole(iKeyID) == TRUE) && (isKeySymbole(token.kind) == TRUE)))
 	{
 		iRet = OutputErrorDelete();
 		if(iRet<0){exit(1);}
-		iRet = OutputErrorInsert(k);
+		iRet = OutputErrorInsert(iKeyID);
 		if(iRet<0){exit(1);}
 		return ProgressAndGetNextToken();
 	}
 
-	iRet = OutputErrorInsert(k);
+	iRet = OutputErrorInsert(iKeyID);
 	if(iRet <0 ){exit(1);}
 
-	return t;
+	return token;
 }
 
 static void printSpaces()			//空白や改行の印字
@@ -450,7 +464,7 @@ static void printSpaces()			//空白や改行の印字
 void printcToken()				//現在のトークンの印字
 {
 	int i=(int)s_tokenLast.kind;
-	if (s_iTokenHasBeenPrinted==1)
+	if (s_iTokenHasBeenPrinted == 1)
 	{
 		s_iTokenHasBeenPrinted = 0; 
 		return;
@@ -458,21 +472,21 @@ void printcToken()				//現在のトークンの印字
 
 	s_iTokenHasBeenPrinted = 1;
 	printSpaces();				//トークンの前の空白や改行印字
-	if (i < end_of_KeyWd){fprintf(s_fptex, "<b>%s</b>", KeywordTable[i].word);} 						//予約語
+	if (i < KIND_END_OF_KEYWORD){fprintf(s_fptex, "<b>%s</b>", KeywordTable[i].word);} 						//予約語
 
-	else if (i < end_of_KeySym){fprintf(s_fptex, "%s", KeywordTable[i].word);}					//演算子か区切り記号
+	else if (i < KIND_END_OF_SYMBOLE){fprintf(s_fptex, "%s", KeywordTable[i].word);}					//演算子か区切り記号
 
-	else if (i==(int)Id)
+	else if (i == KIND_ID)
 	{							//Identfier
 		switch (s_idKind) 
 		{
-		case varId: {fprintf(s_fptex, "%s", s_tokenLast.u.id); return;}
-		case parId: {fprintf(s_fptex, "<i>%s</i>", s_tokenLast.u.id); return;}
-		case funcId: {fprintf(s_fptex, "<i>%s</i>", s_tokenLast.u.id); return;}
-		case constId: {fprintf(s_fptex, "<tt>%s</tt>", s_tokenLast.u.id); return;}
+		case varId: {fprintf(s_fptex, "%s", s_tokenLast.u.szIdentifier); return;}
+		case parId: {fprintf(s_fptex, "<i>%s</i>", s_tokenLast.u.szIdentifier); return;}
+		case funcId: {fprintf(s_fptex, "<i>%s</i>", s_tokenLast.u.szIdentifier); return;}
+		case constId: {fprintf(s_fptex, "<tt>%s</tt>", s_tokenLast.u.szIdentifier); return;}
 		}
 	}
-	else if (i==(int)Num){fprintf(s_fptex, "%d", s_tokenLast.u.value);}			//Num
+	else if (i == KIND_NUM){fprintf(s_fptex, "%d", s_tokenLast.u.value);}			//Num
 
 }
 

@@ -23,7 +23,7 @@ public:
 	enum { IDD = IDD_ABOUTBOX };
 
 	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV サポート
+	virtual void DoDataExchange(CDataExchange* pDX);  // DDX/DDV サポート
 
 // 実装
 protected:
@@ -94,13 +94,13 @@ BOOL CCompilerTestDlg::OnInitDialog()
 	}
 
 	// このダイアログのアイコンを設定します。アプリケーションのメイン ウィンドウがダイアログでない場合、
-	//  Framework は、この設定を自動的に行います。
+	// Framework は、この設定を自動的に行います。
 	SetIcon(m_hIcon, TRUE);			// 大きいアイコンの設定
 	SetIcon(m_hIcon, FALSE);		// 小さいアイコンの設定
 
 	// TODO: 初期化をここに追加します。
 
-	return TRUE;  // フォーカスをコントロールに設定した場合を除き、TRUE を返します。
+	return TRUE; // フォーカスをコントロールに設定した場合を除き、TRUE を返します。
 }
 
 void CCompilerTestDlg::OnSysCommand(UINT nID, LPARAM lParam)
@@ -117,8 +117,8 @@ void CCompilerTestDlg::OnSysCommand(UINT nID, LPARAM lParam)
 }
 
 // ダイアログに最小化ボタンを追加する場合、アイコンを描画するための
-//  下のコードが必要です。ドキュメント/ビュー モデルを使う MFC アプリケーションの場合、
-//  これは、Framework によって自動的に設定されます。
+// 下のコードが必要です。ドキュメント/ビュー モデルを使う MFC アプリケーションの場合、
+// これは、Framework によって自動的に設定されます。
 
 void CCompilerTestDlg::OnPaint()
 {
@@ -146,7 +146,7 @@ void CCompilerTestDlg::OnPaint()
 }
 
 // ユーザーが最小化したウィンドウをドラッグしているときに表示するカーソルを取得するために、
-//  システムがこの関数を呼び出します。
+// システムがこの関数を呼び出します。
 HCURSOR CCompilerTestDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
