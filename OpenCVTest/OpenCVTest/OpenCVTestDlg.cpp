@@ -157,5 +157,5 @@ HCURSOR COpenCVTestDlg::OnQueryDragIcon()
 
 void COpenCVTestDlg::OnBnClickedButton1()
 {
-	aaa("D:\\A\\fractal5.jpg");
+	videotest();
 }
