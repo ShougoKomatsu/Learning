@@ -191,7 +191,9 @@
     <None Include="res\OpenCVTest.rc2" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CVImage.h" />
     <ClInclude Include="decolor.h" />
+    <ClInclude Include="ImageWindow.h" />
     <ClInclude Include="OpenCVTest.h" />
     <ClInclude Include="OpenCVTestDlg.h" />
     <ClInclude Include="Resource.h" />
@@ -199,7 +201,9 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CVImage.cpp" />
     <ClCompile Include="decolor.cpp" />
+    <ClCompile Include="ImageWindow.cpp" />
     <ClCompile Include="OpenCVTest.cpp" />
     <ClCompile Include="OpenCVTestDlg.cpp" />
     <ClCompile Include="stdafx.cpp">

@@ -1,10 +1,10 @@
 
-// OpenCVTestDlg.cpp : 実装ファイル
+// InputTestDlg.cpp : 実装ファイル
 //
 
 #include "stdafx.h"
-#include "OpenCVTest.h"
-#include "OpenCVTestDlg.h"
+#include "InputTest.h"
+#include "InputTestDlg.h"
 #include "afxdialogex.h"
 
 #ifdef _DEBUG
@@ -43,33 +43,33 @@ BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
 END_MESSAGE_MAP()
 
 
-// COpenCVTestDlg ダイアログ
+// CInputTestDlg ダイアログ
 
 
 
 
-COpenCVTestDlg::COpenCVTestDlg(CWnd* pParent /*=NULL*/)
-	: CDialogEx(COpenCVTestDlg::IDD, pParent)
+CInputTestDlg::CInputTestDlg(CWnd* pParent /*=NULL*/)
+	: CDialogEx(CInputTestDlg::IDD, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
 
-void COpenCVTestDlg::DoDataExchange(CDataExchange* pDX)
+void CInputTestDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 }
 
-BEGIN_MESSAGE_MAP(COpenCVTestDlg, CDialogEx)
+BEGIN_MESSAGE_MAP(CInputTestDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_BN_CLICKED(IDC_BUTTON1, &COpenCVTestDlg::OnBnClickedButton1)
+	ON_BN_CLICKED(IDC_BUTTON1, &CInputTestDlg::OnBnClickedButton1)
 END_MESSAGE_MAP()
 
 
-// COpenCVTestDlg メッセージ ハンドラー
+// CInputTestDlg メッセージ ハンドラー
 
-BOOL COpenCVTestDlg::OnInitDialog()
+BOOL CInputTestDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
@@ -103,7 +103,7 @@ BOOL COpenCVTestDlg::OnInitDialog()
 	return TRUE;  // フォーカスをコントロールに設定した場合を除き、TRUE を返します。
 }
 
-void COpenCVTestDlg::OnSysCommand(UINT nID, LPARAM lParam)
+void CInputTestDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
 	if ((nID & 0xFFF0) == IDM_ABOUTBOX)
 	{
@@ -120,7 +120,7 @@ void COpenCVTestDlg::OnSysCommand(UINT nID, LPARAM lParam)
 //  下のコードが必要です。ドキュメント/ビュー モデルを使う MFC アプリケーションの場合、
 //  これは、Framework によって自動的に設定されます。
 
-void COpenCVTestDlg::OnPaint()
+void CInputTestDlg::OnPaint()
 {
 	if (IsIconic())
 	{
@@ -147,27 +147,77 @@ void COpenCVTestDlg::OnPaint()
 
 // ユーザーが最小化したウィンドウをドラッグしているときに表示するカーソルを取得するために、
 //  システムがこの関数を呼び出します。
-HCURSOR COpenCVTestDlg::OnQueryDragIcon()
+HCURSOR CInputTestDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-//#include "decolor.h"
 
-#include "ImageWindow.h"
-
-void COpenCVTestDlg::OnBnClickedButton1()
+int KeyDown(BYTE bySendKey)
 {
-//	aaa("D:\\A\\fractal5.jpg");
-	ImageWindowDlg wh;
-	HWND hWnd;
-	CWnd* cwnd;
-	cwnd = GetDlgItem(IDC_STATIC_IMG);
-	hWnd = cwnd->m_hWnd;
-	wh.OpenWindow(hWnd, 10, 10, 400, 300,DISPLAY_VISIBLE);
-	ImgRGB imgRGB;
-	imgRGB.Set(400,300);
-	wh.SetPart(0, 0,399,299);
-	wh.DispImage(&imgRGB);
+	INPUT inputs[1] = {};
+
+	inputs[0].type=INPUT_KEYBOARD;
+	inputs[0].ki.wVk=bySendKey;
+
+	SendInput(1,inputs,sizeof(INPUT)); 
+	return 0;
+}
+
+int KeyUp(BYTE bySendKey)
+{
+	INPUT inputs[1] = {};
+
+	inputs[0].type=INPUT_KEYBOARD;
+	inputs[0].ki.wVk=bySendKey;
+	inputs[0].ki.dwFlags = KEYEVENTF_KEYUP;
+
+	SendInput(1,inputs,sizeof(INPUT)); 
+	return 0;
+}
+
+
+int KeyDownAndUpUnicode(TCHAR tch)
+{
+	INPUT input[2];
+	input[0].type = INPUT_KEYBOARD;
+	input[0].ki.wVk = 0;
+	input[0].ki.wScan = tch;
+	input[0].ki.dwFlags = KEYEVENTF_UNICODE;
+	input[0].ki.time = 0;
+	input[0].ki.dwExtraInfo = 0;
+
+	input[1].type = INPUT_KEYBOARD;
+	input[1].ki.wVk = 0;
+	input[1].ki.wScan = tch;
+	input[1].ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
+	input[1].ki.time = 0;
+	input[1].ki.dwExtraInfo = 0;
+
+	SendInput(2, input, sizeof(INPUT));
+	return 0;
+}
+
+int KeyDownAndUp(BYTE bySendKey)
+{
+	INPUT inputs[2] = {};
+
+	inputs[0].type=INPUT_KEYBOARD;
+	inputs[0].ki.wVk=bySendKey;
+
+	inputs[1].type=INPUT_KEYBOARD;
+	inputs[1].ki.wVk=bySendKey;
+	inputs[1].ki.dwFlags = KEYEVENTF_KEYUP;
+
+	SendInput(2,inputs,sizeof(INPUT)); 
+	return 0;
+}
+void CInputTestDlg::OnBnClickedButton1()
+{
+	Sleep(1000);
+	KeyDown(VK_LCONTROL);
+	KeyDownAndUpUnicode('v');
+//	KeyDownAndUp(0x56);
+	KeyUp(VK_LCONTROL);
 
 }
