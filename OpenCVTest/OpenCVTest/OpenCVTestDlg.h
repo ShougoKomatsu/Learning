@@ -4,7 +4,7 @@
 
 #pragma once
 
-
+#include "ImageWindow.h"
 // COpenCVTestDlg ダイアログ
 class COpenCVTestDlg : public CDialogEx
 {
@@ -17,6 +17,7 @@ public:
 
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV サポート
+		ImageWindowDlg m_wh;
 
 
 // 実装

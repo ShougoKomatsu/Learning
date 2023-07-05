@@ -11,8 +11,20 @@ BOOL ImposeImage(BYTE* byData, int iR0, int iC0, int iR1, int iC1, int iWinW, in
 	if(byData == NULL){return FALSE;}
 	if(iWinW<=0){return FALSE;}
 	if(iWinH<=0){return FALSE;}
-
+	
 	double a, b;
+	int ii;
+	int i1, i2, i3, i4;
+	i1=0;
+	i2=0;
+	i3=0;
+	i4=0;
+	ii=0;
+	int i5;
+	i5=0;
+	CString sss;
+	sss.Format(_T("%d %d %d %d | %d %d / %f"), iR0, iC0, iR1, iC1, iWinW, iWinH,(iR1-iR0+1)/(1.0*iWinH));
+//	AfxMessageBox(sss);
 	if(Img->iChannel==CHANNEL_3_8)
 	{
 		for(int r=0; r<iWinH; r++)
@@ -27,21 +39,24 @@ BOOL ImposeImage(BYTE* byData, int iR0, int iC0, int iR1, int iC1, int iWinW, in
 				int i10 = int(iR0+(iR1-iR0+1)/(1.0*iWinH)*(r+1))*Img->iWidth + int(iC0+(iC1-iC0+1)/(1.0*iWinW)*(c));
 				int i11 = int(iR0+(iR1-iR0+1)/(1.0*iWinH)*(r+1))*Img->iWidth + int(iC0+(iC1-iC0+1)/(1.0*iWinW)*(c+1));
 
-				if(int(iR0 +(iR1-iR0+1)/(1.0*iWinH)*(r)) >= Img->iHeight){byData[3*(r*iWinW+c)+0]=0;byData[3*(r*iWinW+c)+1]=0;byData[3*(r*iWinW+c)+2]=0; continue;}
-				if(int(iC0 +(iC1-iC0+1)/(1.0*iWinW)*(c)) >= Img->iWidth){byData[3*(r*iWinW+c)+0]=0;byData[3*(r*iWinW+c)+1]=0;byData[3*(r*iWinW+c)+2]=0; continue;}
-				if(int(iR0 +(iR1-iR0+1)/(1.0*iWinH)*(r)) <0) {byData[3*(r*iWinW+c)+0]=0;byData[3*(r*iWinW+c)+1]=0;byData[3*(r*iWinW+c)+2]=0; continue;}
-				if(int(iC0 +(iC1-iC0+1)/(1.0*iWinW)*(c)) <0) {byData[3*(r*iWinW+c)+0]=0;byData[3*(r*iWinW+c)+1]=0;byData[3*(r*iWinW+c)+2]=0; continue;}
-				if((i00 <0) || (i01 <0)|| (i10 <0)||(i11 <0)){byData[3*(r*iWinW+c)+0]=0;byData[3*(r*iWinW+c)+1]=0;byData[3*(r*iWinW+c)+2]=0; continue;}
+				if(int(iR0 +(iR1-iR0+1)/(1.0*iWinH)*(r)) >= Img->iHeight){byData[3*(r*iWinW+c)+0]=128;byData[3*(r*iWinW+c)+1]=0;byData[3*(r*iWinW+c)+2]=0; i1++;continue;}
+				if(int(iC0 +(iC1-iC0+1)/(1.0*iWinW)*(c)) >= Img->iWidth){byData[3*(r*iWinW+c)+0]=0;byData[3*(r*iWinW+c)+1]=0;byData[3*(r*iWinW+c)+2]=0; i2++;continue;}
+				if(int(iR0 +(iR1-iR0+1)/(1.0*iWinH)*(r)) <0) {byData[3*(r*iWinW+c)+0]=0;byData[3*(r*iWinW+c)+1]=0;byData[3*(r*iWinW+c)+2]=0; i3++;continue;}
+				if(int(iC0 +(iC1-iC0+1)/(1.0*iWinW)*(c)) <0) {byData[3*(r*iWinW+c)+0]=0;byData[3*(r*iWinW+c)+1]=0;byData[3*(r*iWinW+c)+2]=0; i3++;continue;}
+				if((i00 <0) || (i01 <0)|| (i10 <0)||(i11 <0)){byData[3*(r*iWinW+c)+0]=0;byData[3*(r*iWinW+c)+1]=0;byData[3*(r*iWinW+c)+2]=0; i3++;continue;}
 
 				if((i00>=Img->iHeight*Img->iWidth) || (i01>=Img->iHeight*Img->iWidth) || (i10>=Img->iHeight*Img->iWidth) || (i11>=Img->iHeight*Img->iWidth))
-				{byData[3*(r*iWinW+c)+0]=0;byData[3*(r*iWinW+c)+1]=0;byData[3*(r*iWinW+c)+2]=0; continue;}
-
-				byData[3*(r+iWinW+c)+0] = BYTE(b*(a*Img->byImgB[i11] +(1-a)*Img->byImgB[i01]) + (1-b)*(a*Img->byImgB[i10] +(1-a)*Img->byImgB[i11]));
-				byData[3*(r+iWinW+c)+1] = BYTE(b*(a*Img->byImgG[i11] +(1-a)*Img->byImgG[i01]) + (1-b)*(a*Img->byImgG[i10] +(1-a)*Img->byImgG[i11]));
-				byData[3*(r+iWinW+c)+2] = BYTE(b*(a*Img->byImgR[i11] +(1-a)*Img->byImgR[i01]) + (1-b)*(a*Img->byImgR[i10] +(1-a)*Img->byImgR[i11]));
+				{byData[3*(r*iWinW+c)+0]=0;byData[3*(r*iWinW+c)+1]=0;byData[3*(r*iWinW+c)+2]=0; i4++;continue;}
+				ii++;
+				byData[3*(r*iWinW+c)+0] = BYTE(b*(a*Img->byImgB[i11] +(1-a)*Img->byImgB[i01]) + (1-b)*(a*Img->byImgB[i10] +(1-a)*Img->byImgB[i11]));
+				byData[3*(r*iWinW+c)+1] = BYTE(b*(a*Img->byImgG[i11] +(1-a)*Img->byImgG[i01]) + (1-b)*(a*Img->byImgG[i10] +(1-a)*Img->byImgG[i11]));
+				byData[3*(r*iWinW+c)+2] = BYTE(b*(a*Img->byImgR[i11] +(1-a)*Img->byImgR[i01]) + (1-b)*(a*Img->byImgR[i10] +(1-a)*Img->byImgR[i11]));
+				if((byData[3*(r*iWinW+c)+0]!=0)||(byData[3*(r*iWinW+c)+1]!=0)||(byData[3*(r*iWinW+c)+2]!=0)){i5++;}
 			}
 		}
 	}
+	sss.Format(_T("ii = %d %d %d %d | %d %d %d %d %d"), ii, iWinH, iWinW, iWinH*iWinW, i1, i2, i3, i4, i5);
+//	AfxMessageBox(sss);
 	if(Img->iChannel==CHANNEL_1_8)
 	{
 		for(int r=0; r<iWinH; r++)
@@ -86,9 +101,13 @@ BOOL ImgRGB::Init()
 	iHeight=0;
 	return TRUE;
 }
-BOOL ImgRGB::Set(int iWidth, int iHeight)
+BOOL ImgRGB::Set(int iWidthIn, int iHeightIn)
 {
+
 	Init();
+	this->iWidth=iWidthIn;
+	this->iHeight=iHeightIn;
+
 	byImgR=new BYTE[iWidth*iHeight];
 	byImgG=new BYTE[iWidth*iHeight];
 	byImgB=new BYTE[iWidth*iHeight];
@@ -96,7 +115,6 @@ BOOL ImgRGB::Set(int iWidth, int iHeight)
 	if(byImgR==NULL){return FALSE;}
 	if(byImgG==NULL){return FALSE;}
 	if(byImgB==NULL){return FALSE;}
-
 	for(int r=0; r<iHeight; r++)
 	{
 		for(int c=0; c<iWidth; c++)
@@ -183,11 +201,28 @@ BOOL ImageWindowDlg::DispImage(ImgRGB* imgRGB)
 
 	bRet = ImposeImage(m_v,m_iR0,m_iC0,m_iR1,m_iC1, m_iWidth, m_iHeight,imgRGB); 
 	CString sss;
-	sss.Format(_T("%d"), bRet);
-	AfxMessageBox(sss);
+	sss.Format(_T("bRet = %d"), bRet);
+//	AfxMessageBox(sss);
 	BitBlt(m_hDC, 0, 0, m_iWidth, m_iHeight, hDCCompt, 0, 0, SRCCOPY);
 	SelectObject(hDCCompt, hBmpOrg);
 	DeleteDC(hDCCompt);
 	DeleteObject(hBmpOrg);
 	return TRUE;
+}
+#include "CVImage.h"
+
+BOOL ImgRGB::Assign(CVImage* cvImg)
+{
+this->Set(cvImg->iWidth, cvImg->iHeight);
+this->iChannel=CHANNEL_3_8;
+for(int r=0; r<iHeight; r++)
+{
+	for(int c=0; c<iWidth; c++)
+	{
+		this->byImgR[r*iWidth+c]=cvImg->m_pbyImage1[r*iWidth+c];
+		this->byImgG[r*iWidth+c]=cvImg->m_pbyImage2[r*iWidth+c];
+		this->byImgB[r*iWidth+c]=cvImg->m_pbyImage3[r*iWidth+c];
+	}
+}
+return TRUE;
 }

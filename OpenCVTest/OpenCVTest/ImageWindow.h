@@ -1,4 +1,7 @@
 #include "stdafx.h"
+#include "CVImage.h"
+#pragma once
+
 #define DELETE_OBJECT(arg) if(arg!= NULL){DeleteObject(arg); arg=NULL;}
 #define SAFE_DELETE(arg) if(arg!= NULL){delete [] (arg); arg=NULL;}
 
@@ -18,6 +21,7 @@ struct ImgRGB
 	BOOL Init();
 	ImgRGB(){byImgR=NULL;byImgG=NULL;byImgB=NULL;Init();}
 	~ImgRGB(){Init();}
+BOOL Assign(CVImage* cvImg);
 };
 
 BOOL ImposeImage(BYTE* byData, int iR0, int iC0, int iR1, int iC1, int iWinW, int iWinH, ImgRGB* imgrgb);

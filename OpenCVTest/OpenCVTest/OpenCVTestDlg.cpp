@@ -68,7 +68,7 @@ END_MESSAGE_MAP()
 
 
 // COpenCVTestDlg メッセージ ハンドラー
-
+#include "CVImage.h"
 BOOL COpenCVTestDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
@@ -92,7 +92,6 @@ BOOL COpenCVTestDlg::OnInitDialog()
 			pSysMenu->AppendMenu(MF_STRING, IDM_ABOUTBOX, strAboutMenu);
 		}
 	}
-
 	// このダイアログのアイコンを設定します。アプリケーションのメイン ウィンドウがダイアログでない場合、
 	//  Framework は、この設定を自動的に行います。
 	SetIcon(m_hIcon, TRUE);			// 大きいアイコンの設定
@@ -155,19 +154,47 @@ HCURSOR COpenCVTestDlg::OnQueryDragIcon()
 //#include "decolor.h"
 
 #include "ImageWindow.h"
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/videoio.hpp>
+#include <opencv2/highgui.hpp>
 
 void COpenCVTestDlg::OnBnClickedButton1()
 {
-//	aaa("D:\\A\\fractal5.jpg");
-	ImageWindowDlg wh;
+	CVImage test;
+	test.Assign(_T("d:\\\\test.bmp"));
+	CString sss;
+
 	HWND hWnd;
 	CWnd* cwnd;
 	cwnd = GetDlgItem(IDC_STATIC_IMG);
 	hWnd = cwnd->m_hWnd;
-	wh.OpenWindow(hWnd, 10, 10, 400, 300,DISPLAY_VISIBLE);
+	m_wh.OpenWindow(hWnd, 10, 10, 400, 300,DISPLAY_VISIBLE);
 	ImgRGB imgRGB;
-	imgRGB.Set(400,300);
-	wh.SetPart(0, 0,399,299);
-	wh.DispImage(&imgRGB);
+	AfxMessageBox(_T("1"));
+	imgRGB.Assign(&test);
 
+	m_wh.SetPart(0, 0,imgRGB.iHeight-1, imgRGB.iWidth-1);
+	AfxMessageBox(_T("2"));
+	m_wh.DispImage(&imgRGB);
+	AfxMessageBox(_T("3"));
+	
+	cv::VideoCapture capture; 
+	int iRet;
+	iRet =capture.open(0, cv::CAP_ANY);
+	sss.Format(_T("%d"), iRet);
+	AfxMessageBox(sss);
+	cv::Mat frame;
+	iRet = capture.read(frame);
+
+	test.Assign(frame);
+	imgRGB.Assign(&test);	
+	m_wh.SetPart(0, 0,imgRGB.iHeight-1, imgRGB.iWidth-1);
+	while(1)
+	{
+	iRet = capture.read(frame);
+	test.Assign(frame);
+	imgRGB.Assign(&test);	
+	m_wh.DispImage(&imgRGB);
+	Sleep(10);
+	}
 }
