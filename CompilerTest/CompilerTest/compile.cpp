@@ -113,7 +113,7 @@ int constDecl()			//定数宣言のコンパイル
 			}
 			else
 			{
-				iRet = OutputErrorType("number");
+				iRet = OutputErrorType(_T("number"));
 				if(iRet < 0){return iRet;}
 			}
 			s_Token = ProgressAndGetNextToken();
@@ -134,7 +134,7 @@ int constDecl()			//定数宣言のコンパイル
 		}
 		s_Token = ProgressAndGetNextToken();
 	}
-	s_Token = GetTokenWithCheck(s_Token, KIND_SEMICOLON);		//最後は";"のはず
+	s_Token = GetTokenWithCheck(s_Token, KIND_SEMICOLON);		//最後は");"のはず
 	return 0;
 }
 
@@ -165,7 +165,7 @@ int varDecl()				//変数宣言のコンパイル
 		}
 		s_Token = ProgressAndGetNextToken();
 	}
-	s_Token = GetTokenWithCheck(s_Token, KIND_SEMICOLON);		//最後は";"のはず
+	s_Token = GetTokenWithCheck(s_Token, KIND_SEMICOLON);		//最後は");"のはず
 	return 0;
 }
 
@@ -218,7 +218,7 @@ int funcDecl()			//関数宣言のコンパイル
 	iRet = CompileTheBlock(iFuncIndex );	//ブロックのコンパイル、その関数名のインデックスを渡す
 	if(iRet < 0){return iRet;}
 
-	s_Token = GetTokenWithCheck(s_Token, KIND_SEMICOLON);		//最後は";"のはず
+	s_Token = GetTokenWithCheck(s_Token, KIND_SEMICOLON);		//最後は");"のはず
 	return 0;
 }
 
@@ -244,7 +244,7 @@ int CompileTheStatement()			//文のコンパイル
 				else if(iKind == KIND_parId){}
 				else
 				{
-					iRet = OutputErrorType("var/par");
+					iRet = OutputErrorType(_T("var/par"));
 					if(iRet < 0){return iRet;}
 				} 		
 
@@ -285,7 +285,7 @@ int CompileTheStatement()			//文のコンパイル
 					while(1)
 					{
 						if (s_Token.m_iKind == KIND_SEMICOLON)
-						{		//次が";"なら文が続く
+						{		//次が");"なら文が続く
 							s_Token = ProgressAndGetNextToken();
 							break;
 						}
@@ -296,7 +296,7 @@ int CompileTheStatement()			//文のコンパイル
 						}
 						if (IsStartWithBeginKey(s_Token) == TRUE)
 						{		//次が文の先頭記号なら
-							iRet = OutputErrorInsert(KIND_SEMICOLON);	//";"を忘れたことにする
+							iRet = OutputErrorInsert(KIND_SEMICOLON);	//");"を忘れたことにする
 							if(iRet < 0){return iRet;}
 
 							break;
@@ -473,7 +473,7 @@ BOOL CompileTheFactor()					//式の因子のコンパイル
 
 					if (GetParameterNum(tIndex) != i)
 					{
-						iRet = OutputErrMessage("\\#par");
+						iRet = OutputErrMessage(_T("\\#par"));
 						if(iRet < 0){return iRet;}
 
 					}	//pars(tIndex)は仮引数の個数
@@ -566,7 +566,7 @@ BOOL CompileTheCondition()					//条件式のコンパイル
 
 	default:
 		{
-			iRet = OutputErrorType("rel-op");
+			iRet = OutputErrorType(_T("rel-op"));
 			if(iRet < 0){return iRet;}
 			break;
 		}

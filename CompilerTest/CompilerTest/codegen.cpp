@@ -75,7 +75,7 @@ void IncrimentCodeIndex()		//目的コードのインデックスの増加とチェック
 	s_iCodeIndex++;
 	if (s_iCodeIndex < MAXCODE){return;}
 
-	OutputErrAndFinish("too many code");
+	OutputErrAndFinish(_T("too many code"));
 }
 	
 void backPatch(int i)		//命令語のバックパッチ（次の番地を）
@@ -206,7 +206,7 @@ void execute()			//目的コード（命令語）の実行
 		case OPERATION_CODE_ICT:
 			{
 				top += i.u.value; 
-				if (top >= MAXMEM-MAXREG){OutputErrAndFinish("stack overflow");}
+				if (top >= MAXMEM-MAXREG){OutputErrAndFinish(_T("stack overflow"));}
 				break;
 			}
 		case OPERATION_CODE_JMP: 
@@ -235,7 +235,7 @@ void execute()			//目的コード（命令語）の実行
 			case OPERATOR_NEQ:{ top--; stack[top-1] = (stack[top-1] != stack[top]); continue;}
 			case OPERATOR_LSEQ:{ top--; stack[top-1] = (stack[top-1] <= stack[top]); continue;}
 			case OPERATOR_GREQ:{ top--; stack[top-1] = (stack[top-1] >= stack[top]); continue;}
-			case OPERATOR_WRT:{ top--; printf("%d ", stack[top]); continue;}
+			case OPERATOR_WRT:{ top--; printf("%d", stack[top]); continue;}
 			case OPERATOR_WRL:{ printf("\n"); continue;}
 			}
 		}

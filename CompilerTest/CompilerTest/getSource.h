@@ -57,7 +57,7 @@ typedef struct token
 	int m_iKind;				/*　トークンの種類かキーの名前　*/
 	union 
 	{
-		char szIdentifier[MAXNAME]; 		/*　Identfierの時、その名前　*/
+		TCHAR szIdentifier[MAXNAME]; 		/*　Identfierの時、その名前　*/
 		int value;				/*　Numの時、その値　*/
 	} u;
 }Token;
@@ -73,17 +73,17 @@ Token GetTokenWithCheck(Token t, int iKind);	/*　t.m_iKind == kのチェック　*/
 #define ERR_OUTPUT_COUNT_MAX (-1)
 #define ERR_OUTPUT_ABORT (-2)
 
-int openSource(char fileName[]); 	/*　ソースファイルのopen　*/
+int openSource(TCHAR fileName[]); 	/*　ソースファイルのopen　*/
 void closeSource();			/*　ソースファイルのclose　*/
 void initSource();			/*　テーブルの初期設定、texファイルの初期設定　*/ 
 void finalSource(); 			/*　ソースの最後のチェック、texファイルの最終設定　*/ 
-int OutputErrorType(char *m);		/*　型エラーを.texファイルに出力　*/
+int OutputErrorType(TCHAR *m);		/*　型エラーを.texファイルに出力　*/
 int OutputErrorInsert(int iKind);		/*　keyString(k)を.texファイルに挿入　*/
 int OutputErrorMissingID();		/*　名前がないとのメッセージを.texファイルに挿入　*/
 int OutputErrorMissingOperator();		/*　演算子がないとのメッセージを.texファイルに挿入　*/
 int OutputErrorDelete();			/*　今読んだトークンを読み捨て（.texファイルに出力）*/
-int OutputErrMessage(char *m);	/*　エラーメッセージを.texファイルに出力　*/
-int OutputErrAndFinish(char *m);			/*　エラーメッセージを出力し、コンパイル終了　*/
+int OutputErrMessage(TCHAR *m);	/*　エラーメッセージを.texファイルに出力　*/
+int OutputErrAndFinish(TCHAR *m);			/*　エラーメッセージを出力し、コンパイル終了　*/
 int errorN();				/*　エラーの個数を返す　*/
 
 void setIdKind(int iKind);   /*　現トークン(Id)の種類をセット（.texファイル出力のため）*/

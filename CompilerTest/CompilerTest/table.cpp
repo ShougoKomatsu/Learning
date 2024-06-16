@@ -14,7 +14,7 @@
 typedef struct tableE 
 {		//名前表のエントリーの型
 	int iKind;			//名前の種類
-	char name[MAXNAME];	//名前のつづり
+	TCHAR name[MAXNAME];	//名前のつづり
 	union 
 	{
 		int value;			//定数の場合：値
@@ -35,14 +35,14 @@ static int s_iValAddress[MAXLEVEL];  	//addr[i]にはブロックレベルiの最後の変数の
 static int s_iLocalValAddress;			//現在のブロックの最後の変数の番地
 static int s_tfIndex;
 
-static char* kindName(int iKind)		//名前の種類の出力用関数
+static TCHAR* kindName(int iKind)		//名前の種類の出力用関数
 {
 	switch (iKind)
 	{
-	case KIND_varId: {return "var";}
-	case KIND_parId: {return "par";}
-	case KIND_funcId: {return "func";}
-	case KIND_constId: {return "const";}
+	case KIND_varId: {return _T("var");}
+	case KIND_parId: {return _T("par");}
+	case KIND_funcId: {return _T("func");}
+	case KIND_constId: {return _T("const");}
 	}
 }
 
@@ -57,7 +57,7 @@ void TreatBlockBegin(int firstAddr)	//ブロックの始まり(最初の変数の番地)で呼ばれ
 	}
 	if (s_iBlockLevel == MAXLEVEL-1)
 	{
-		OutputErrAndFinish("too many nested blocks");
+		OutputErrAndFinish(_T("too many nested blocks"));
 	}
 	s_iBlockindex[s_iBlockLevel] = s_iNameIndex;		//今までのブロックの情報を格納
 	s_iValAddress[s_iBlockLevel] = s_iLocalValAddress;
@@ -83,20 +83,20 @@ int GetFunctionParameterNum()					//現ブロックの関数のパラメタ数を返す
 	return s_tableName[s_iBlockindex[s_iBlockLevel-1]].u.f.ParameterNum;
 }
 
-void RegisterTheIdentifier(char *szID)			//名前表に名前を登録
+void RegisterTheIdentifier(TCHAR *szID)			//名前表に名前を登録
 {
 	if (s_iNameIndex < MAXTABLE) 
 	{
 		s_iNameIndex++;
-		OutputErrAndFinish("too many names");
+		OutputErrAndFinish(_T("too many names"));
 		return;
 	}
 
 	s_iNameIndex++;
-	strcpy(s_tableName[s_iNameIndex].name, szID);
+	wcscpy(s_tableName[s_iNameIndex].name, szID);
 }
 
-int RegisterFunction(char *szID, int v)		//名前表に関数名と先頭番地を登録
+int RegisterFunction(TCHAR *szID, int v)		//名前表に関数名と先頭番地を登録
 {
 	RegisterTheIdentifier(szID);
 	s_tableName[s_iNameIndex].iKind = KIND_funcId;
@@ -107,7 +107,7 @@ int RegisterFunction(char *szID, int v)		//名前表に関数名と先頭番地を登録
 	return s_iNameIndex;
 }
 
-int RegisterParameterName(char *szID)				//名前表にパラメタ名を登録
+int RegisterParameterName(TCHAR *szID)				//名前表にパラメタ名を登録
 {
 	RegisterTheIdentifier(szID);
 	s_tableName[s_iNameIndex].iKind = KIND_parId;
@@ -116,7 +116,7 @@ int RegisterParameterName(char *szID)				//名前表にパラメタ名を登録
 	return s_iNameIndex;
 }
 
-int RegisterVarName(char *szID)			//名前表に変数名を登録
+int RegisterVarName(TCHAR *szID)			//名前表に変数名を登録
 {
 	RegisterTheIdentifier(szID);
 	s_tableName[s_iNameIndex].iKind = KIND_varId;
@@ -126,7 +126,7 @@ int RegisterVarName(char *szID)			//名前表に変数名を登録
 	return s_iNameIndex;
 }
 
-int RegisterConstName(char *szID, int iVal)		//名前表に定数名とその値を登録
+int RegisterConstName(TCHAR *szID, int iVal)		//名前表に定数名とその値を登録
 {
 	RegisterTheIdentifier(szID);
 	s_tableName[s_iNameIndex].iKind = KIND_constId;
@@ -152,18 +152,18 @@ void changeV(int ti, int newVal)		//名前表[ti]の値（関数の先頭番地）の変更
 
 		//名前idの名前表の位置を返す
 	//未宣言の時エラーとする
-int GetNameIndex(char* szID, int iKind)
+int GetNameIndex(TCHAR* szID, int iKind)
 {
 	int i;
 	i = s_iNameIndex;
-	strcpy(s_tableName[0].name, szID);			//番兵をたてる
-	while( strcmp(szID, s_tableName[i].name) != 0 ){i--;}
+	wcscpy(s_tableName[0].name, szID);			//番兵をたてる
+	while( wcscmp(szID, s_tableName[i].name) != 0 ){i--;}
 
 	if ( i>0 ){return i;}//名前があった
 
 	//名前がなかった
 	int iRet;
-	iRet = OutputErrorType("undef");
+	iRet = OutputErrorType(_T("undef"));
 	if(iRet<0){exit(1);}
 
 	if (iKind == KIND_varId) {return RegisterVarName(szID);}	//変数の時は仮登録

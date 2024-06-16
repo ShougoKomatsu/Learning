@@ -73,7 +73,7 @@ BOOL CCompilerTestDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	// "バージョン情報..." メニューをシステム メニューに追加します。
+	// _T("バージョン情報..." メニューをシステム メニューに追加します。
 
 	// IDM_ABOUTBOX は、システム コマンドの範囲内になければなりません。
 	ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);

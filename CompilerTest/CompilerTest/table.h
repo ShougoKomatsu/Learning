@@ -16,14 +16,14 @@ void TreatBlockBegin(int firstAddr);	//ƒuƒƒbƒN‚Ìn‚Ü‚è(Å‰‚Ì•Ï”‚Ì”Ô’n)‚ÅŒÄ‚Î‚
 void TreatBlockEnd();			//ƒuƒƒbƒN‚ÌI‚è‚ÅŒÄ‚Î‚ê‚é
 int iGetBlockLevel();				//Œ»ƒuƒƒbƒN‚ÌƒŒƒxƒ‹‚ğ•Ô‚·
 int GetFunctionParameterNum();				//Œ»ƒuƒƒbƒN‚ÌŠÖ”‚Ìƒpƒ‰ƒƒ^”‚ğ•Ô‚·
-int RegisterFunction(char *id, int v);	//–¼‘O•\‚ÉŠÖ”–¼‚Ææ“ª”Ô’n‚ğ“o˜^
-int RegisterVarName(char *id);		//–¼‘O•\‚É•Ï”–¼‚ğ“o˜^
-int RegisterParameterName(char *id);		//–¼‘O•\‚Éƒpƒ‰ƒƒ^–¼‚ğ“o˜^
-int RegisterConstName(char *id, int v);	//–¼‘O•\‚É’è”–¼‚Æ‚»‚Ì’l‚ğ“o˜^
+int RegisterFunction(TCHAR *id, int v);	//–¼‘O•\‚ÉŠÖ”–¼‚Ææ“ª”Ô’n‚ğ“o˜^
+int RegisterVarName(TCHAR *id);		//–¼‘O•\‚É•Ï”–¼‚ğ“o˜^
+int RegisterParameterName(TCHAR *id);		//–¼‘O•\‚Éƒpƒ‰ƒƒ^–¼‚ğ“o˜^
+int RegisterConstName(TCHAR *id, int v);	//–¼‘O•\‚É’è”–¼‚Æ‚»‚Ì’l‚ğ“o˜^
 void TreatParameterEnd();				//ƒpƒ‰ƒƒ^éŒ¾•”‚ÌÅŒã‚ÅŒÄ‚Î‚ê‚é
 void changeV(int ti, int newVal);	//–¼‘O•\[ti]‚Ì’liŠÖ”‚Ìæ“ª”Ô’nj‚Ì•ÏX
 
-int GetNameIndex(char *szIdD, int iKind);	//–¼‘Oid‚Ì–¼‘O•\‚ÌˆÊ’u‚ğ•Ô‚·
+int GetNameIndex(TCHAR *szIdD, int iKind);	//–¼‘Oid‚Ì–¼‘O•\‚ÌˆÊ’u‚ğ•Ô‚·
 //–¢éŒ¾‚ÌƒGƒ‰[‚Æ‚·‚é
 int GetKind(int i);			//–¼‘O•\[i]‚Ìí—Ş‚ğ•Ô‚·
 
